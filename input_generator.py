@@ -4,6 +4,7 @@ Handles generation of input files from CSV parameters.
 """
 
 import csv
+import os
 
 
 def format_value(value: float) -> str:
@@ -104,6 +105,9 @@ def process_csv_and_generate_input_files(
         output_prefix: Prefix for output files (default: "sen")
         output_file_dir: Directory for output files
     """
+    # Create output directory if it doesn't exist
+    os.makedirs(output_file_dir, exist_ok=True)
+
     with open(csv_file, "r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
