@@ -136,44 +136,71 @@ def prompt_user_for_tasks():
     print("=" * 70 + "\n")
 
     tasks_list = list(AVAILABLE_TASKS.items())
-    tasks_config = {}
 
     print("Please select which tasks you want to execute:\n")
 
     for idx, (task_name, description) in enumerate(tasks_list, 1):
-        default_status = TASKS.get(task_name, True)
-        default_str = "[default: YES]" if default_status else "[default: NO]"
+        print(f"{idx}. {description}")
 
-        while True:
-            response = (
-                input(f"{idx}. {description}\n   Execute? (y/n) {default_str}: ")
-                .strip()
-                .lower()
-            )
+    print(f"{len(tasks_list) + 1}. Run ALL tasks")
+    print("0. Exit without running anything\n")
 
-            if response == "":
-                # Use default
-                tasks_config[task_name] = default_status
-                print()
-                break
-            elif response in ["y", "yes"]:
-                tasks_config[task_name] = True
-                print()
-                break
-            elif response in ["n", "no"]:
-                tasks_config[task_name] = False
-                print()
-                break
+    while True:
+        try:
+            choice = input(
+                "Enter your choice (e.g., 1 or 1,2,3 for multiple): "
+            ).strip()
+
+            if choice == "0":
+                print("\nExiting...")
+                sys.exit(0)
+
+            # Parse multiple selections
+            selected = [int(x.strip()) for x in choice.split(",")]
+
+            # Validate selections
+            if any(s < 0 or s > len(tasks_list) + 1 for s in selected):
+                print(
+                    f"Invalid choice. Please enter numbers between 0 and {len(tasks_list) + 1}.\n"
+                )
+                continue
+
+            # Build tasks config
+            tasks_config = {}
+
+            if (len(tasks_list) + 1) in selected:
+                # Run all tasks
+                for task_name, _ in tasks_list:
+                    tasks_config[task_name] = True
             else:
-                print("   Please enter 'y', 'n', or press Enter for default.\n")
+                # Run selected tasks only
+                for idx, (task_name, _) in enumerate(tasks_list, 1):
+                    tasks_config[task_name] = idx in selected
 
-    # Show summary
-    print("=" * 70)
-    enabled_tasks = [task for task, enabled in tasks_config.items() if enabled]
-    print(f"Summary: {len(enabled_tasks)} task(s) selected")
-    print("=" * 70 + "\n")
+            # Show summary
+            print("\n" + "=" * 70)
+            enabled_tasks = [
+                AVAILABLE_TASKS[task]
+                for task, enabled in tasks_config.items()
+                if enabled
+            ]
+            if enabled_tasks:
+                print(f"Selected {len(enabled_tasks)} task(s):")
+                for i, task_desc in enumerate(enabled_tasks, 1):
+                    print(f"  {i}. {task_desc}")
+            else:
+                print("No tasks selected.")
+            print("=" * 70 + "\n")
 
-    return tasks_config
+            return tasks_config
+
+        except ValueError:
+            print(
+                "Invalid input. Please enter numbers separated by commas (e.g., 1 or 1,2,3).\n"
+            )
+        except KeyboardInterrupt:
+            print("\n\nExiting...")
+            sys.exit(0)
 
 
 def run_tasks(tasks_config):
@@ -206,6 +233,7 @@ def run_tasks(tasks_config):
                 csv_file,
                 INPUT_GENERATOR_CONFIG["output_prefix"],
                 INPUT_GENERATOR_CONFIG["output_dir"],
+                INPUT_GENERATOR_CONFIG["vdos_csv_dir"],
             )
             print("✓ Input files generated successfully\n")
         except FileNotFoundError as e:
@@ -279,9 +307,10 @@ if __name__ == "__main__":
         print_task_info()
         sys.exit(0)
 
-    if args.interactive:
-        tasks_to_run = prompt_user_for_tasks()
-    else:
+    # Always prompt user interactively unless specific arguments are provided
+    if args.all or args.tasks or args.skip:
         tasks_to_run = determine_tasks_to_run(args)
+    else:
+        tasks_to_run = prompt_user_for_tasks()
 
     run_tasks(tasks_to_run)

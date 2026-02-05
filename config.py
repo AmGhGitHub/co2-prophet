@@ -11,12 +11,13 @@ BASE_DIR = PROJECT_ROOT
 
 # Input files and directories
 BASE_FILE = BASE_DIR / "base"
-INPUT_CSV_FILE = BASE_DIR / "sen-vars" / "sen_fbv.csv"
+INPUT_CSV_FILE = BASE_DIR / "sen-runs" / "sen_fbv.csv"
 
 # Output directories for Prophet simulations
 PROPHET_DATA_OUTPUT_DIR = Path("C:/vDos/Prophet/sen-datafiles")
 PROPHET_RESULTS_DIR = Path("C:/vDos/Prophet/sen-output")
 PROPHET_CSV_OUTPUT_DIR = Path("C:/vDos/Prophet/sen-output-csv")
+PROPHET_CSV_VARS_DIR = Path("C:/vDos/Prophet/sen-runs")  # Copy of input CSV file
 
 # Visualization outputs
 PLOT_OUTPUT_FILE = PROPHET_CSV_OUTPUT_DIR / "oil_vs_injected.png"
@@ -30,6 +31,7 @@ INPUT_GENERATOR_CONFIG = {
     "csv_file": str(INPUT_CSV_FILE),
     "output_prefix": OUTPUT_PREFIX,
     "output_dir": str(PROPHET_DATA_OUTPUT_DIR),
+    "vdos_csv_dir": str(PROPHET_CSV_VARS_DIR),
 }
 
 # Output converter configuration
@@ -84,6 +86,7 @@ def get_all_paths():
         "PROPHET_DATA_OUTPUT_DIR": str(PROPHET_DATA_OUTPUT_DIR),
         "PROPHET_RESULTS_DIR": str(PROPHET_RESULTS_DIR),
         "PROPHET_CSV_OUTPUT_DIR": str(PROPHET_CSV_OUTPUT_DIR),
+        "PROPHET_CSV_VARS_DIR": str(PROPHET_CSV_VARS_DIR),
         "PLOT_OUTPUT_FILE": str(PLOT_OUTPUT_FILE),
     }
 

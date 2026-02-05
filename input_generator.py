@@ -5,6 +5,7 @@ Handles generation of input files from CSV parameters.
 
 import csv
 import os
+import shutil
 
 
 def format_value(value: float) -> str:
@@ -95,6 +96,7 @@ def process_csv_and_generate_input_files(
     csv_file: str,
     output_prefix: str = "sen",
     output_file_dir: str = "./sen-datafile/",
+    vdos_csv_dir: str = None,
 ) -> None:
     """
     Read parameters from CSV and generate input files.
@@ -104,6 +106,7 @@ def process_csv_and_generate_input_files(
         csv_file: Path to CSV file with parameters
         output_prefix: Prefix for output files (default: "sen")
         output_file_dir: Directory for output files
+        vdos_csv_dir: Directory to copy CSV file to (optional)
     """
     # Create output directory if it doesn't exist
     os.makedirs(output_file_dir, exist_ok=True)
@@ -121,3 +124,14 @@ def process_csv_and_generate_input_files(
             }
             output_file = f"{output_file_dir}/{output_prefix}{run_number}.SAV".upper()
             generate_input_file(base_file, output_file, params)
+
+    # Copy CSV file to vDos Prophet directory if specified
+    if vdos_csv_dir:
+        try:
+            os.makedirs(vdos_csv_dir, exist_ok=True)
+            csv_filename = os.path.basename(csv_file)
+            vdos_csv_path = os.path.join(vdos_csv_dir, csv_filename)
+            shutil.copy2(csv_file, vdos_csv_path)
+            print(f"\n✓ Copied '{csv_filename}' to '{vdos_csv_dir}'")
+        except Exception as e:
+            print(f"\n⚠ Warning: Could not copy CSV to vDos directory: {e}")
