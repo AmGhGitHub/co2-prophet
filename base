@@ -1,0 +1,55 @@
+'Sample 40 ac. 5 spot'
+'********** WELL AND PATTERN DATA ********'
+'PATTERN'
+'5S'
+'NWELLS     NOINJ'
+2,      1
+'WELLS     WELLY     WELLQ'
+0,     0,     1
+1,     1,    -1
+'NBNDPT'
+5
+'BOUNDX     BOUNDY'
+0,   0
+0,   1
+1,   1
+1,   0
+0,   0
+'*************  PROGRAM CONTROLS  ********'
+'LWGEN     OUTTIM'
+'N',      1
+'**** RELATIVE PERMEABILITY PARAMETERS ***'
+'SORW     SORG     SORM'
+0.37,      0.37,      0.001
+'SGR     SSR'
+0.37,      0.37
+'SWC     SWIR'
+0.2,      0.2
+'KROCW     KWRO     KRSMAX     KRGCW'
+0.4,      0.3,      0.4,      0.4
+'EXPOW    EXPW     EXPS     EXPG     EXPOG'
+2,      2,      2,      2,      2
+'KRMSEL     W'
+2,      0.666
+'***************  FLUID DATA  ************'
+'VISO     VISW'
+2,      0.8
+'BO       RS       API       SALN       CSG'
+1.4,      500,      30,      100000,      0.7
+'************** RESERVOIR DATA ***********'
+'TRES     P     MMP'
+105,      2000,      1200
+'DPCOEF   PERMAV   THICK   POROS   NLAYERS'
+0.7,      10,      10,      0.2,      5
+'SOINIT     SGINIT     SWINIT'
+0.7,      0,      0.3
+'AREA     XKVH'
+1742400,      0.1
+'********** INJECTION PARAMETERS *********'
+'NTIMES     WAGTAG'
+4,      'T'
+'HCPVI    WTRRAT    SOLRAT     TMORVL'
+1,      500,      0,      1
+0.2,      0,      1,      0
+0.2,      500,      1,      0.5
+0.4,      500,      0,      1
