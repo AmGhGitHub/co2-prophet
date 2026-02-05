@@ -72,7 +72,7 @@ TASKS = {
 # Available tasks description
 AVAILABLE_TASKS = {
     "generate_input_files": "Generate input files from CSV parameters",
-    "convert_output_to_csv": "Convert OUTPUT files to CSV format",
+    "convert_output_to_csv": "Convert simulation outputs files to csv format",
     "plot_results": "Plot Oil produced vs Injected total",
 }
 
