@@ -46,6 +46,12 @@ PLOTTER_CONFIG = {
     "output_plot": str(PLOT_OUTPUT_FILE),
 }
 
+# Results analyzer configuration
+RESULTS_ANALYZER_CONFIG = {
+    "csv_dir": str(PROPHET_CSV_OUTPUT_DIR),
+    "output_file": str(PROPHET_CSV_OUTPUT_DIR / "summary_metrics.csv"),
+}
+
 # Parameter generation configuration (sensitivity analysis)
 #
 # Sensitivity Level Guidelines (for 6 parameters):
@@ -83,6 +89,7 @@ TASKS = {
     "generate_parameters": False,  # Generate random parameters for sensitivity analysis
     "generate_input_files": True,  # Generate input files from CSV
     "convert_output_to_csv": True,  # Convert OUTPUT files to CSV
+    "extract_key_metrics": True,  # Extract oil produced at 1 and 2 HCPV
     "plot_results": True,  # Plot Oil produced vs Injected total
 }
 
@@ -91,6 +98,7 @@ AVAILABLE_TASKS = {
     "generate_parameters": "Generate random parameters for sensitivity analysis",
     "generate_input_files": "Generate input files from CSV parameters",
     "convert_output_to_csv": "Convert simulation outputs files to csv format",
+    "extract_key_metrics": "Extract key metrics (Oil at 1 & 2 HCPV) from results",
     "plot_results": "Plot Oil produced vs Injected total",
 }
 

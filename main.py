@@ -14,6 +14,7 @@ from config import (
     OUTPUT_CONVERTER_CONFIG,
     PARAMETER_GENERATOR_CONFIG,
     PLOTTER_CONFIG,
+    RESULTS_ANALYZER_CONFIG,
     TASKS,
     get_tasks_to_run,
     print_task_info,
@@ -22,6 +23,22 @@ from input_generator import process_csv_and_generate_input_files
 from output_converter import convert_output_to_csv
 from param_generator import generate_sensitivity_csv
 from plotter import plot_oil_vs_injected
+from results_analyzer import extract_key_metrics, print_summary_statistics
+
+
+# ANSI color codes for terminal output
+class Colors:
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    BLUE = "\033[94m"
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+
+
+def print_error(message):
+    """Print error message in red."""
+    print(f"{Colors.RED}✗ {message}{Colors.RESET}")
 
 
 def parse_arguments():
@@ -271,7 +288,7 @@ def run_tasks(tasks_config):
     print("=" * 60 + "\n")
 
     if tasks_config.get("generate_parameters"):
-        print("[0/4] Generating random parameters for sensitivity analysis...")
+        print("[0/5] Generating random parameters for sensitivity analysis...")
         try:
             config = PARAMETER_GENERATOR_CONFIG
 
@@ -307,10 +324,10 @@ def run_tasks(tasks_config):
             actual_runs = config["n_runs"] if config["n_runs"] else "auto-calculated"
             print(f"✓ Generated {actual_runs} parameter sets successfully\n")
         except Exception as e:
-            print(f"✗ Error generating parameters: {e}\n")
+            print_error(f"Error generating parameters: {e}\n")
 
     if tasks_config.get("generate_input_files"):
-        print("[1/4] Generating input files from CSV...")
+        print("[1/5] Generating input files from CSV...")
         try:
             # Check if base file exists
             base_file = INPUT_GENERATOR_CONFIG["base_file"]
@@ -331,12 +348,12 @@ def run_tasks(tasks_config):
             )
             print("✓ Input files generated successfully\n")
         except FileNotFoundError as e:
-            print(f"✗ File not found: {e}\n")
+            print_error(f"File not found: {e}\n")
         except Exception as e:
-            print(f"✗ Error generating input files: {e}\n")
+            print_error(f"Error generating input files: {e}\n")
 
     if tasks_config.get("convert_output_to_csv"):
-        print("[2/4] Converting OUTPUT files to CSV...")
+        print("[2/5] Converting OUTPUT files to CSV...")
         try:
             input_dir = OUTPUT_CONVERTER_CONFIG["input_dir"]
 
@@ -361,12 +378,39 @@ def run_tasks(tasks_config):
                     convert_output_to_csv(input_dir, output_dir)
                     print("✓ Output files converted successfully\n")
         except Exception as e:
-            print(f"✗ Error converting output files: {e}\n")
+            print_error(f"Error converting output files: {e}\n")
             # Skip plotting if conversion failed
             tasks_config["plot_results"] = False
 
+    if tasks_config.get("extract_key_metrics"):
+        print("[3/5] Extracting key metrics from results...")
+        try:
+            csv_dir = RESULTS_ANALYZER_CONFIG["csv_dir"]
+            output_file = RESULTS_ANALYZER_CONFIG["output_file"]
+
+            # Check if directory exists
+            if not os.path.exists(csv_dir):
+                print(f"⚠ CSV directory not found: {csv_dir}")
+                print(f"  Skipping metrics extraction.\n")
+            else:
+                # Check if directory has any CSV files
+                csv_files = [
+                    f
+                    for f in os.listdir(csv_dir)
+                    if f.startswith("OUTPUT_") and f.endswith(".csv")
+                ]
+                if not csv_files:
+                    print(f"⚠ No OUTPUT CSV files found in: {csv_dir}")
+                    print(f"  Skipping metrics extraction.\n")
+                else:
+                    summary_df = extract_key_metrics(csv_dir, output_file)
+                    print_summary_statistics(summary_df)
+                    print("✓ Key metrics extracted successfully\n")
+        except Exception as e:
+            print_error(f"Error extracting metrics: {e}\n")
+
     if tasks_config.get("plot_results"):
-        print("[3/4] Plotting results...")
+        print("[4/5] Plotting results...")
         try:
             csv_dir = PLOTTER_CONFIG["csv_dir"]
 
@@ -387,7 +431,7 @@ def run_tasks(tasks_config):
                     )
                     print("✓ Results plotted successfully\n")
         except Exception as e:
-            print(f"✗ Error plotting results: {e}\n")
+            print_error(f"Error plotting results: {e}\n")
 
     print("=" * 60)
     print("Pipeline completed!")

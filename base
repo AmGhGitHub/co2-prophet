@@ -20,13 +20,13 @@
 'N',      1
 '**** RELATIVE PERMEABILITY PARAMETERS ***'
 'SORW     SORG     SORM'
-0.37,      0.37,      0.001
+0.47,      0.47,      0.001
 'SGR     SSR'
-0.37,      0.37
+0.25,      0.25
 'SWC     SWIR'
-0.2,      0.2
+0.15,      0.15
 'KROCW     KWRO     KRSMAX     KRGCW'
-0.4,      0.3,      0.4,      0.4
+1.0,      0.28,      0.4,      1.0
 'EXPOW    EXPW     EXPS     EXPG     EXPOG'
 2,      2,      2,      2,      2
 'KRMSEL     W'
@@ -44,12 +44,9 @@
 'SOINIT     SGINIT     SWINIT'
 0.5,      0,      0.5
 'AREA     XKVH'
-18532.9,      0.05
+640,      0.05
 '********** INJECTION PARAMETERS *********'
 'NTIMES     WAGTAG'
-4,      'T'
+1,      'T'
 'HCPVI    WTRRAT    SOLRAT     TMORVL'
-1,      500,      0,      1
-0.2,      0,      1,      0
-0.2,      500,      1,      0.5
-0.4,      500,      0,      1
+2,      0,      10,      0

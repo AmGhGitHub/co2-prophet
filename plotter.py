@@ -19,9 +19,13 @@ def plot_oil_vs_injected(csv_dir: str, output_plot: str = None) -> None:
     """
     plt.figure(figsize=(10, 6))
 
-    # Get all CSV files and sort them
+    # Get all CSV files and sort them (only OUTPUT_*.csv files)
     csv_files = sorted(
-        [f for f in os.listdir(csv_dir) if f.endswith(".csv")],
+        [
+            f
+            for f in os.listdir(csv_dir)
+            if f.startswith("OUTPUT_") and f.endswith(".csv")
+        ],
         key=lambda x: int(x.split("_")[1].split(".")[0]),  # Sort by run number
     )
 
