@@ -47,7 +47,18 @@ def plot_oil_vs_injected(csv_dir: str, output_plot: str = None) -> None:
     plt.title(
         "Oil Produced vs Injected Total - All Cases", fontsize=14, fontweight="bold"
     )
-    plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left", fontsize=9)
+
+    # Place legend below plot with multiple columns
+    plt.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.15),
+        ncol=10,  # Number of columns in legend
+        fontsize=8,
+        frameon=True,
+        fancybox=True,
+        shadow=True,
+    )
+
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
 

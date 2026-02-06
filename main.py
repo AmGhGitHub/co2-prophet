@@ -142,7 +142,8 @@ def prompt_user_for_tasks():
     for idx, (task_name, description) in enumerate(tasks_list, 1):
         print(f"{idx}. {description}")
 
-    print(f"{len(tasks_list) + 1}. Run ALL tasks")
+    print(f"{len(tasks_list) + 1}. Run tasks 2&3 (Convert outputs + Plot)")
+    print(f"{len(tasks_list) + 2}. Run ALL tasks")
     print("0. Exit without running anything\n")
 
     while True:
@@ -159,19 +160,24 @@ def prompt_user_for_tasks():
             selected = [int(x.strip()) for x in choice.split(",")]
 
             # Validate selections
-            if any(s < 0 or s > len(tasks_list) + 1 for s in selected):
+            if any(s < 0 or s > len(tasks_list) + 2 for s in selected):
                 print(
-                    f"Invalid choice. Please enter numbers between 0 and {len(tasks_list) + 1}.\n"
+                    f"Invalid choice. Please enter numbers between 0 and {len(tasks_list) + 2}.\n"
                 )
                 continue
 
             # Build tasks config
             tasks_config = {}
 
-            if (len(tasks_list) + 1) in selected:
-                # Run all tasks
+            if (len(tasks_list) + 2) in selected:
+                # Run all tasks (option 5)
                 for task_name, _ in tasks_list:
                     tasks_config[task_name] = True
+            elif (len(tasks_list) + 1) in selected:
+                # Run tasks 2&3 (option 4)
+                tasks_config["generate_input_files"] = False
+                tasks_config["convert_output_to_csv"] = True
+                tasks_config["plot_results"] = True
             else:
                 # Run selected tasks only
                 for idx, (task_name, _) in enumerate(tasks_list, 1):
