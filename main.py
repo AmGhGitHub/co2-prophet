@@ -12,6 +12,7 @@ from config import (
     AVAILABLE_TASKS,
     INPUT_GENERATOR_CONFIG,
     OUTPUT_CONVERTER_CONFIG,
+    PARAMETER_GENERATOR_CONFIG,
     PLOTTER_CONFIG,
     TASKS,
     get_tasks_to_run,
@@ -19,6 +20,7 @@ from config import (
 )
 from input_generator import process_csv_and_generate_input_files
 from output_converter import convert_output_to_csv
+from param_generator import generate_sensitivity_csv
 from plotter import plot_oil_vs_injected
 
 
@@ -170,11 +172,12 @@ def prompt_user_for_tasks():
             tasks_config = {}
 
             if (len(tasks_list) + 2) in selected:
-                # Run all tasks (option 5)
+                # Run all tasks (option 6)
                 for task_name, _ in tasks_list:
                     tasks_config[task_name] = True
             elif (len(tasks_list) + 1) in selected:
-                # Run tasks 2&3 (option 4)
+                # Run tasks 3&4 (option 5: convert + plot)
+                tasks_config["generate_parameters"] = False
                 tasks_config["generate_input_files"] = False
                 tasks_config["convert_output_to_csv"] = True
                 tasks_config["plot_results"] = True
@@ -221,8 +224,34 @@ def run_tasks(tasks_config):
     print(f"Running {len(enabled_tasks)} task(s)")
     print("=" * 60 + "\n")
 
+    if tasks_config.get("generate_parameters"):
+        print("[0/4] Generating random parameters for sensitivity analysis...")
+        try:
+            config = PARAMETER_GENERATOR_CONFIG
+
+            # Prepare custom ranges
+            custom_ranges = {
+                "dpcoef_range": config["dpcoef_range"],
+                "permav_range": config["permav_range"],
+                "thick_range": config["thick_range"],
+                "poros_range": config["poros_range"],
+                "nlayers_range": config["nlayers_range"],
+            }
+
+            generate_sensitivity_csv(
+                output_file=config["output_file"],
+                n_runs=config["n_runs"],
+                seed=config["seed"],
+                custom_ranges=custom_ranges,
+                custom_distributions=config["distributions"],
+                backup_dir=config["backup_dir"],
+            )
+            print(f"✓ Generated {config['n_runs']} parameter sets successfully\n")
+        except Exception as e:
+            print(f"✗ Error generating parameters: {e}\n")
+
     if tasks_config.get("generate_input_files"):
-        print("[1/3] Generating input files from CSV...")
+        print("[1/4] Generating input files from CSV...")
         try:
             # Check if base file exists
             base_file = INPUT_GENERATOR_CONFIG["base_file"]
@@ -248,7 +277,7 @@ def run_tasks(tasks_config):
             print(f"✗ Error generating input files: {e}\n")
 
     if tasks_config.get("convert_output_to_csv"):
-        print("[2/3] Converting OUTPUT files to CSV...")
+        print("[2/4] Converting OUTPUT files to CSV...")
         try:
             input_dir = OUTPUT_CONVERTER_CONFIG["input_dir"]
 
@@ -278,7 +307,7 @@ def run_tasks(tasks_config):
             tasks_config["plot_results"] = False
 
     if tasks_config.get("plot_results"):
-        print("[3/3] Plotting results...")
+        print("[3/4] Plotting results...")
         try:
             csv_dir = PLOTTER_CONFIG["csv_dir"]
 

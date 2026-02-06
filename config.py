@@ -48,6 +48,10 @@ PLOTTER_CONFIG = {
 
 # Parameter generation configuration (sensitivity analysis)
 PARAMETER_GENERATOR_CONFIG = {
+    "output_file": str(INPUT_CSV_FILE),
+    "backup_dir": str(PROPHET_CSV_VARS_DIR),
+    "n_runs": 100,  # Number of parameter sets to generate
+    "seed": 42,  # Random seed (set to None for different data each run)
     "dpcoef_range": (0.7, 0.95),
     "permav_range": (100, 1000),
     "thick_range": (14, 16),
@@ -64,6 +68,7 @@ PARAMETER_GENERATOR_CONFIG = {
 
 # Task configuration - Enable/disable specific tasks
 TASKS = {
+    "generate_parameters": False,  # Generate random parameters for sensitivity analysis
     "generate_input_files": True,  # Generate input files from CSV
     "convert_output_to_csv": True,  # Convert OUTPUT files to CSV
     "plot_results": True,  # Plot Oil produced vs Injected total
@@ -71,6 +76,7 @@ TASKS = {
 
 # Available tasks description
 AVAILABLE_TASKS = {
+    "generate_parameters": "Generate random parameters for sensitivity analysis",
     "generate_input_files": "Generate input files from CSV parameters",
     "convert_output_to_csv": "Convert simulation outputs files to csv format",
     "plot_results": "Plot Oil produced vs Injected total",
