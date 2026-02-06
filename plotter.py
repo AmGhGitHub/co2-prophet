@@ -37,16 +37,20 @@ def plot_oil_vs_injected(csv_dir: str, output_plot: str = None) -> None:
         # Plot Oil produced vs Injected total
         plt.plot(
             df["Injected total"],
-            df["Oil produced"],
+            df["Oil produced"] * 100,
             label=f"Run {run_number}",
             linewidth=1.5,
         )
 
-    plt.xlabel("Injected total", fontsize=12)
-    plt.ylabel("Oil produced", fontsize=12)
+    plt.xlabel("Inj. CO2, HCPV", fontsize=12)
+    plt.ylabel("Incremental Oil R.F, %OOIP", fontsize=12)
     plt.title(
         "Oil Produced vs Injected Total - All Cases", fontsize=14, fontweight="bold"
     )
+
+    # Set axis limits to start at origin (0,0) with no gaps
+    plt.xlim(left=0)
+    plt.ylim(bottom=0)
 
     # Place legend below plot with multiple columns
     plt.legend(
