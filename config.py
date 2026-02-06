@@ -47,11 +47,21 @@ PLOTTER_CONFIG = {
 }
 
 # Parameter generation configuration (sensitivity analysis)
+#
+# Sensitivity Level Guidelines (for 6 parameters):
+#   - 'minimum':    ~7 runs   (n_params + 1) - Very sparse, quick testing only
+#   - 'low':        ~12 runs  (2 * n_params) - Basic coverage, preliminary analysis
+#   - 'medium':     ~60 runs  (10 * n_params) - Recommended for most cases
+#   - 'high':       ~300 runs (50 * n_params) - Detailed sensitivity analysis
+#   - 'very_high':  ~600 runs (100 * n_params) - Comprehensive analysis
+#
 PARAMETER_GENERATOR_CONFIG = {
     "output_file": str(INPUT_CSV_FILE),
     "backup_dir": str(PROPHET_CSV_VARS_DIR),
-    "n_runs": 200,  # Number of parameter sets to generate
+    "n_runs": None,  # Auto-calculate based on parameters (or set a specific number)
+    "sensitivity_level": "medium",  # 'minimum', 'low', 'medium', 'high', 'very_high'
     "seed": 42,  # Random seed (set to None for different data each run)
+    "use_lhs": True,  # Use Latin Hypercube Sampling for better parameter space coverage
     "dpcoef_range": (0.7, 0.95),
     "permav_range": (100, 1000),
     "poros_range": (0.08, 0.13),

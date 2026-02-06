@@ -8,6 +8,7 @@ import os
 import shutil
 
 import numpy as np
+from scipy.stats import qmc  # For Latin Hypercube Sampling
 
 
 class ParameterGenerator:
@@ -20,6 +21,7 @@ class ParameterGenerator:
         Args:
             seed: Random seed for reproducibility (optional)
         """
+        self.seed = seed
         if seed is not None:
             np.random.seed(seed)
 
@@ -33,9 +35,10 @@ class ParameterGenerator:
         soinit_range=(0.4, 0.6),
         xkvh_range=(0.01, 0.1),
         distributions=None,
+        use_lhs=True,
     ) -> list:
         """
-        Generate random parameters for sensitivity analysis.
+        Generate random parameters for sensitivity analysis using Latin Hypercube Sampling.
 
         Args:
             n_runs: Number of simulation runs to generate
@@ -48,6 +51,7 @@ class ParameterGenerator:
             distributions: Dictionary specifying distribution types for each parameter
                           Options: 'uniform', 'normal', 'lognormal', 'triangular'
                           Example: {'DPCOEF': 'uniform', 'PERMAV': 'lognormal'}
+            use_lhs: If True, use Latin Hypercube Sampling for better space coverage
 
         Returns:
             List of dictionaries containing parameter sets
@@ -62,45 +66,87 @@ class ParameterGenerator:
                 "XKVH": "uniform",
             }
 
+        # Parameter names and ranges
+        param_names = ["DPCOEF", "PERMAV", "POROS", "MMP", "SOINIT", "XKVH"]
+        param_ranges = [
+            dpcoef_range,
+            permav_range,
+            poros_range,
+            mmp_range,
+            soinit_range,
+            xkvh_range,
+        ]
+
         params_list = []
 
-        for run in range(1, n_runs + 1):
-            params = {"RUN": run}
-
-            # Generate DPCOEF
-            params["DPCOEF"] = self._generate_value(
-                "DPCOEF", dpcoef_range, distributions.get("DPCOEF", "uniform")
+        if use_lhs:
+            # Use Latin Hypercube Sampling for better parameter space coverage
+            n_params = len(param_names)
+            sampler = qmc.LatinHypercube(
+                d=n_params, seed=self.seed if hasattr(self, "seed") else None
             )
 
-            # Generate PERMAV
-            params["PERMAV"] = self._generate_value(
-                "PERMAV", permav_range, distributions.get("PERMAV", "lognormal")
-            )
+            # Generate LHS samples in [0, 1] range
+            lhs_samples = sampler.random(n=n_runs)
 
-            # Generate POROS
-            params["POROS"] = self._generate_value(
-                "POROS", poros_range, distributions.get("POROS", "normal")
-            )
+            # Transform samples to parameter ranges
+            for run_idx in range(n_runs):
+                params = {"RUN": run_idx + 1}
 
-            # Generate MMP
-            params["MMP"] = self._generate_value(
-                "MMP", mmp_range, distributions.get("MMP", "uniform")
-            )
+                for param_idx, param_name in enumerate(param_names):
+                    uniform_sample = lhs_samples[run_idx, param_idx]
+                    param_range = param_ranges[param_idx]
+                    dist_type = distributions.get(param_name, "uniform")
 
-            # Generate SOINIT
-            params["SOINIT"] = self._generate_value(
-                "SOINIT", soinit_range, distributions.get("SOINIT", "uniform")
-            )
+                    # Transform uniform [0,1] sample to parameter value
+                    value = self._transform_lhs_sample(
+                        uniform_sample, param_name, param_range, dist_type
+                    )
+                    params[param_name] = value
 
-            # Generate SWINIT (complementary to SOINIT)
-            params["SWINIT"] = 1.0 - params["SOINIT"]
+                # Calculate SWINIT as complement of SOINIT
+                params["SWINIT"] = 1.0 - params["SOINIT"]
+                params_list.append(params)
 
-            # Generate XKVH
-            params["XKVH"] = self._generate_value(
-                "XKVH", xkvh_range, distributions.get("XKVH", "uniform")
-            )
+        else:
+            # Original random sampling (for comparison)
+            for run in range(1, n_runs + 1):
+                params = {"RUN": run}
 
-            params_list.append(params)
+                # Generate DPCOEF
+                params["DPCOEF"] = self._generate_value(
+                    "DPCOEF", dpcoef_range, distributions.get("DPCOEF", "uniform")
+                )
+
+                # Generate PERMAV
+                params["PERMAV"] = self._generate_value(
+                    "PERMAV", permav_range, distributions.get("PERMAV", "lognormal")
+                )
+
+                # Generate POROS
+                params["POROS"] = self._generate_value(
+                    "POROS", poros_range, distributions.get("POROS", "normal")
+                )
+
+                # Generate MMP
+                params["MMP"] = self._generate_value(
+                    "MMP", mmp_range, distributions.get("MMP", "uniform")
+                )
+
+                # Generate SOINIT
+                params["SOINIT"] = self._generate_value(
+                    "SOINIT", soinit_range, distributions.get("SOINIT", "uniform")
+                )
+
+                # Generate SWINIT (complementary to SOINIT)
+                params["SWINIT"] = 1.0 - params["SOINIT"]
+
+                # Generate XKVH
+                params["XKVH"] = self._generate_value(
+                    "XKVH", xkvh_range, distributions.get("XKVH", "uniform")
+                )
+
+                params_list.append(params)
 
         return params_list
 
@@ -149,6 +195,62 @@ class ParameterGenerator:
             # Default to uniform
             return np.random.uniform(min_val, max_val)
 
+    def _transform_lhs_sample(
+        self,
+        uniform_sample: float,
+        param_name: str,
+        value_range: tuple,
+        distribution: str,
+    ) -> float:
+        """
+        Transform a uniform [0,1] LHS sample to a parameter value using the specified distribution.
+
+        Args:
+            uniform_sample: LHS sample in [0, 1] range
+            param_name: Name of the parameter
+            value_range: (min, max) tuple for the parameter
+            distribution: Type of distribution to apply
+
+        Returns:
+            Transformed parameter value
+        """
+        from scipy import stats
+
+        min_val, max_val = value_range
+
+        if distribution == "uniform":
+            # Simple linear transformation
+            return min_val + uniform_sample * (max_val - min_val)
+
+        elif distribution == "normal":
+            # Transform using normal distribution inverse CDF (percent point function)
+            mean = (min_val + max_val) / 2
+            std = (max_val - min_val) / 6  # 99.7% of values within range
+            value = stats.norm.ppf(uniform_sample, loc=mean, scale=std)
+            return np.clip(value, min_val, max_val)
+
+        elif distribution == "lognormal":
+            # Transform using lognormal distribution
+            log_min = np.log(max(min_val, 0.001))
+            log_max = np.log(max_val)
+            mean_log = (log_min + log_max) / 2
+            std_log = (log_max - log_min) / 6
+            value = stats.lognorm.ppf(uniform_sample, s=std_log, scale=np.exp(mean_log))
+            return np.clip(value, min_val, max_val)
+
+        elif distribution == "triangular":
+            # Transform using triangular distribution
+            mode = (min_val + max_val) / 2
+            c = (mode - min_val) / (max_val - min_val)  # Mode parameter
+            value = stats.triang.ppf(
+                uniform_sample, c=c, loc=min_val, scale=max_val - min_val
+            )
+            return value
+
+        else:
+            # Default to uniform
+            return min_val + uniform_sample * (max_val - min_val)
+
     def save_to_csv(self, params_list: list, output_file: str) -> None:
         """
         Save generated parameters to CSV file.
@@ -196,24 +298,60 @@ class ParameterGenerator:
             return f"{value:.1f}"
 
 
+def calculate_recommended_runs(n_params: int, sensitivity_level: str = "medium") -> int:
+    """
+    Calculate recommended number of runs for Latin Hypercube Sampling.
+
+    Common guidelines:
+    - Minimum: n_params + 1 (very sparse)
+    - Low: 2 * n_params (basic coverage)
+    - Medium: 10 * n_params (recommended for most cases)
+    - High: 50 * n_params (detailed sensitivity)
+    - Very High: 100 * n_params (comprehensive analysis)
+
+    Args:
+        n_params: Number of parameters to sample
+        sensitivity_level: One of 'minimum', 'low', 'medium', 'high', 'very_high'
+
+    Returns:
+        Recommended number of runs
+    """
+    multipliers = {
+        "minimum": 1,
+        "low": 2,
+        "medium": 10,
+        "high": 50,
+        "very_high": 100,
+    }
+
+    multiplier = multipliers.get(sensitivity_level.lower(), 10)
+    recommended = max(n_params + 1, multiplier * n_params)
+
+    return recommended
+
+
 def generate_sensitivity_csv(
     output_file: str,
-    n_runs: int = 10,
+    n_runs: int = None,
     seed: int = None,
     custom_ranges: dict = None,
     custom_distributions: dict = None,
     backup_dir: str = None,
+    use_lhs: bool = True,
+    sensitivity_level: str = "medium",
 ) -> None:
     """
     Convenience function to generate sensitivity analysis CSV.
 
     Args:
         output_file: Path to output CSV file
-        n_runs: Number of runs to generate
+        n_runs: Number of runs to generate (if None, auto-calculated based on parameters)
         seed: Random seed for reproducibility
         custom_ranges: Dictionary of custom ranges for parameters
         custom_distributions: Dictionary of distribution types for parameters
         backup_dir: Optional directory to save a backup copy of the CSV
+        use_lhs: Use Latin Hypercube Sampling (default: True)
+        sensitivity_level: 'minimum', 'low', 'medium', 'high', 'very_high' (used if n_runs is None)
     """
     generator = ParameterGenerator(seed=seed)
 
@@ -231,9 +369,17 @@ def generate_sensitivity_csv(
     if custom_ranges:
         ranges.update(custom_ranges)
 
+    # Auto-calculate number of runs if not specified
+    if n_runs is None:
+        n_params = 6  # DPCOEF, PERMAV, POROS, MMP, SOINIT, XKVH
+        n_runs = calculate_recommended_runs(n_params, sensitivity_level)
+        print(
+            f"Auto-calculated {n_runs} runs for {n_params} parameters (sensitivity level: {sensitivity_level})"
+        )
+
     # Generate parameters
     params_list = generator.generate_parameters(
-        n_runs=n_runs, distributions=custom_distributions, **ranges
+        n_runs=n_runs, distributions=custom_distributions, use_lhs=use_lhs, **ranges
     )
 
     # Format values for better readability

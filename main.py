@@ -212,6 +212,52 @@ def prompt_user_for_tasks():
             sys.exit(0)
 
 
+def prompt_sensitivity_level():
+    """Prompt user to select sensitivity level for parameter generation."""
+    print("\n" + "=" * 70)
+    print("SELECT SENSITIVITY LEVEL")
+    print("=" * 70 + "\n")
+
+    sensitivity_options = {
+        1: ("minimum", "~7 runs", "Very sparse, quick testing only"),
+        2: ("low", "~12 runs", "Basic coverage, preliminary analysis"),
+        3: ("medium", "~60 runs", "Recommended for most cases"),
+        4: ("high", "~300 runs", "Detailed sensitivity analysis"),
+        5: ("very_high", "~600 runs", "Comprehensive analysis"),
+    }
+
+    print("Choose sensitivity level for parameter generation (6 parameters):\n")
+    for key, (level, runs, desc) in sensitivity_options.items():
+        marker = " [Recommended]" if level == "medium" else ""
+        print(
+            f"{key}. {level.replace('_', ' ').title():12} - {runs:10} - {desc}{marker}"
+        )
+
+    print("\n0. Use config file setting\n")
+
+    while True:
+        try:
+            choice = input("Enter your choice (0-5): ").strip()
+
+            if choice == "0":
+                return None  # Use config file setting
+
+            choice_num = int(choice)
+            if choice_num in sensitivity_options:
+                selected_level = sensitivity_options[choice_num][0]
+                print(
+                    f"\n✓ Selected: {selected_level.replace('_', ' ').title()} ({sensitivity_options[choice_num][1]})"
+                )
+                return selected_level
+            else:
+                print(f"Invalid choice. Please enter a number between 0 and 5.\n")
+        except ValueError:
+            print("Invalid input. Please enter a number.\n")
+        except KeyboardInterrupt:
+            print("\n\nUsing config file setting...")
+            return None
+
+
 def run_tasks(tasks_config):
     """Execute the selected tasks."""
     enabled_tasks = [task for task, enabled in tasks_config.items() if enabled]
@@ -228,6 +274,15 @@ def run_tasks(tasks_config):
         print("[0/4] Generating random parameters for sensitivity analysis...")
         try:
             config = PARAMETER_GENERATOR_CONFIG
+
+            # Prompt for sensitivity level if running interactively
+            sensitivity_level = prompt_sensitivity_level()
+            if sensitivity_level is None:
+                # Use config file setting
+                sensitivity_level = config.get("sensitivity_level", "medium")
+                print(
+                    f"Using config file setting: {sensitivity_level.replace('_', ' ').title()}"
+                )
 
             # Prepare custom ranges
             custom_ranges = {
@@ -246,8 +301,11 @@ def run_tasks(tasks_config):
                 custom_ranges=custom_ranges,
                 custom_distributions=config["distributions"],
                 backup_dir=config["backup_dir"],
+                use_lhs=config.get("use_lhs", True),
+                sensitivity_level=sensitivity_level,
             )
-            print(f"✓ Generated {config['n_runs']} parameter sets successfully\n")
+            actual_runs = config["n_runs"] if config["n_runs"] else "auto-calculated"
+            print(f"✓ Generated {actual_runs} parameter sets successfully\n")
         except Exception as e:
             print(f"✗ Error generating parameters: {e}\n")
 
