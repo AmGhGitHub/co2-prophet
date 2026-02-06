@@ -28,9 +28,10 @@ class ParameterGenerator:
         n_runs: int,
         dpcoef_range=(0.7, 0.95),
         permav_range=(100, 1000),
-        thick_range=(14, 16),
         poros_range=(0.08, 0.13),
-        nlayers_range=(3, 9),
+        mmp_range=(1200, 1500),
+        soinit_range=(0.4, 0.6),
+        xkvh_range=(0.01, 0.1),
         distributions=None,
     ) -> list:
         """
@@ -40,9 +41,10 @@ class ParameterGenerator:
             n_runs: Number of simulation runs to generate
             dpcoef_range: (min, max) for depletion coefficient
             permav_range: (min, max) for average permeability (mD)
-            thick_range: (min, max) for thickness (ft)
             poros_range: (min, max) for porosity (fraction)
-            nlayers_range: (min, max) for number of layers (integer)
+            mmp_range: (min, max) for minimum miscibility pressure (psi)
+            soinit_range: (min, max) for initial oil saturation (fraction)
+            xkvh_range: (min, max) for vertical to horizontal permeability ratio
             distributions: Dictionary specifying distribution types for each parameter
                           Options: 'uniform', 'normal', 'lognormal', 'triangular'
                           Example: {'DPCOEF': 'uniform', 'PERMAV': 'lognormal'}
@@ -54,9 +56,10 @@ class ParameterGenerator:
             distributions = {
                 "DPCOEF": "uniform",
                 "PERMAV": "lognormal",
-                "THICK": "uniform",
                 "POROS": "normal",
-                "NLAYERS": "uniform",
+                "MMP": "uniform",
+                "SOINIT": "uniform",
+                "XKVH": "uniform",
             }
 
         params_list = []
@@ -74,21 +77,27 @@ class ParameterGenerator:
                 "PERMAV", permav_range, distributions.get("PERMAV", "lognormal")
             )
 
-            # Generate THICK
-            params["THICK"] = self._generate_value(
-                "THICK", thick_range, distributions.get("THICK", "uniform")
-            )
-
             # Generate POROS
             params["POROS"] = self._generate_value(
                 "POROS", poros_range, distributions.get("POROS", "normal")
             )
 
-            # Generate NLAYERS (integer)
-            params["NLAYERS"] = int(
-                self._generate_value(
-                    "NLAYERS", nlayers_range, distributions.get("NLAYERS", "uniform")
-                )
+            # Generate MMP
+            params["MMP"] = self._generate_value(
+                "MMP", mmp_range, distributions.get("MMP", "uniform")
+            )
+
+            # Generate SOINIT
+            params["SOINIT"] = self._generate_value(
+                "SOINIT", soinit_range, distributions.get("SOINIT", "uniform")
+            )
+
+            # Generate SWINIT (complementary to SOINIT)
+            params["SWINIT"] = 1.0 - params["SOINIT"]
+
+            # Generate XKVH
+            params["XKVH"] = self._generate_value(
+                "XKVH", xkvh_range, distributions.get("XKVH", "uniform")
             )
 
             params_list.append(params)
@@ -148,7 +157,16 @@ class ParameterGenerator:
             params_list: List of parameter dictionaries
             output_file: Path to output CSV file
         """
-        fieldnames = ["RUN", "DPCOEF", "PERMAV", "THICK", "POROS", "NLAYERS"]
+        fieldnames = [
+            "RUN",
+            "DPCOEF",
+            "PERMAV",
+            "POROS",
+            "MMP",
+            "SOINIT",
+            "SWINIT",
+            "XKVH",
+        ]
 
         with open(output_file, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -166,15 +184,14 @@ class ParameterGenerator:
             value: Parameter value
 
         Returns:
-            Formatted stringCO2 Indata
-
+            Formatted string
         """
-        if param_name == "NLAYERS":
-            return str(int(value))
-        elif param_name in ["DPCOEF", "POROS"]:
+        if param_name in ["DPCOEF", "POROS", "SOINIT", "SWINIT"]:
             return f"{value:.3f}"
-        elif param_name == "THICK":
-            return f"{value:.1f}"
+        elif param_name == "XKVH":
+            return f"{value:.2f}"
+        elif param_name == "MMP":
+            return f"{value:.0f}"
         else:  # PERMAV
             return f"{value:.1f}"
 
@@ -204,9 +221,10 @@ def generate_sensitivity_csv(
     ranges = {
         "dpcoef_range": (0.7, 1.0),
         "permav_range": (10, 200),
-        "thick_range": (1, 20),
         "poros_range": (0.15, 0.35),
-        "nlayers_range": (3, 10),
+        "mmp_range": (1200, 1500),
+        "soinit_range": (0.4, 0.6),
+        "xkvh_range": (0.01, 0.1),
     }
 
     # Update with custom ranges if provided
@@ -222,8 +240,11 @@ def generate_sensitivity_csv(
     for params in params_list:
         params["DPCOEF"] = round(params["DPCOEF"], 2)
         params["PERMAV"] = round(params["PERMAV"], 1)
-        params["THICK"] = round(params["THICK"], 1)
         params["POROS"] = round(params["POROS"], 3)
+        params["MMP"] = round(params["MMP"], 0)
+        params["SOINIT"] = round(params["SOINIT"], 3)
+        params["SWINIT"] = round(params["SWINIT"], 3)
+        params["XKVH"] = round(params["XKVH"], 2)
 
     # Save to CSV
     generator.save_to_csv(params_list, output_file)

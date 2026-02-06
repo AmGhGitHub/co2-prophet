@@ -53,32 +53,62 @@ def generate_input_file(base_file: str, output_file: str, params: dict) -> None:
     Args:
         base_file: Path to the base input file
         output_file: Path to the output file
-        params: Dictionary with keys: DPCOEF, PERMAV, THICK, POROS, NLAYERS
+        params: Dictionary with keys: DPCOEF, PERMAV, POROS, MMP, SOINIT, SWINIT, XKVH
     """
     with open(base_file, "r") as f:
         lines = f.readlines()
 
-    # Find the line containing the header and modify the next line
+    # Update MMP value (line with 'TRES     P     MMP')
     for i, line in enumerate(lines):
-        if "DPCOEF" in line and "PERMAV" in line and "THICK" in line:
-            # Next line contains the values
+        if "TRES" in line and "P" in line and "MMP" in line:
             value_line = lines[i + 1]
             parts = value_line.split(",")
-
-            # parts[0] = DPCOEF, parts[1] = PERMAV, parts[2] = THICK
-            # parts[3] = POROS, parts[4] = NLAYERS (with newline)
-
-            # First value (DPCOEF) - no leading space in original
-            parts[0] = format_value(params["DPCOEF"])
-
-            # Other values - preserve spacing
-            parts[1] = replace_value_preserve_spacing(parts[1], params["PERMAV"])
-            parts[2] = replace_value_preserve_spacing(parts[2], params["THICK"])
-            parts[3] = replace_value_preserve_spacing(parts[3], params["POROS"])
-            parts[4] = replace_value_preserve_spacing(
-                parts[4], params["NLAYERS"], has_newline=True
+            # parts[0] = TRES, parts[1] = P, parts[2] = MMP
+            parts[2] = replace_value_preserve_spacing(
+                parts[2], params["MMP"], has_newline=True
             )
+            lines[i + 1] = ",".join(parts)
+            break
 
+    # Update DPCOEF, PERMAV, POROS (line with 'DPCOEF   PERMAV   THICK   POROS   NLAYERS')
+    # Note: We're keeping THICK and NLAYERS from base file, only updating DPCOEF, PERMAV, POROS
+    for i, line in enumerate(lines):
+        if "DPCOEF" in line and "PERMAV" in line:
+            value_line = lines[i + 1]
+            parts = value_line.split(",")
+            # parts[0] = DPCOEF, parts[1] = PERMAV, parts[2] = THICK, parts[3] = POROS, parts[4] = NLAYERS
+            parts[0] = format_value(params["DPCOEF"])
+            parts[1] = replace_value_preserve_spacing(parts[1], params["PERMAV"])
+            # Skip parts[2] (THICK) - keep original value
+            parts[3] = replace_value_preserve_spacing(parts[3], params["POROS"])
+            # Skip parts[4] (NLAYERS) - keep original value
+            lines[i + 1] = ",".join(parts)
+            break
+
+    # Update SOINIT and SWINIT (line with 'SOINIT     SGINIT     SWINIT')
+    for i, line in enumerate(lines):
+        if "SOINIT" in line and "SGINIT" in line and "SWINIT" in line:
+            value_line = lines[i + 1]
+            parts = value_line.split(",")
+            # parts[0] = SOINIT, parts[1] = SGINIT, parts[2] = SWINIT
+            parts[0] = format_value(params["SOINIT"])
+            # Keep SGINIT as is (parts[1])
+            parts[2] = replace_value_preserve_spacing(
+                parts[2], params["SWINIT"], has_newline=True
+            )
+            lines[i + 1] = ",".join(parts)
+            break
+
+    # Update XKVH (line with 'AREA     XKVH')
+    for i, line in enumerate(lines):
+        if "AREA" in line and "XKVH" in line:
+            value_line = lines[i + 1]
+            parts = value_line.split(",")
+            # parts[0] = AREA, parts[1] = XKVH
+            # Keep AREA as is (parts[0])
+            parts[1] = replace_value_preserve_spacing(
+                parts[1], params["XKVH"], has_newline=True
+            )
             lines[i + 1] = ",".join(parts)
             break
 
@@ -86,8 +116,9 @@ def generate_input_file(base_file: str, output_file: str, params: dict) -> None:
         f.writelines(lines)
 
     print(
-        f"Created '{output_file}' with: DPCOEF={params['DPCOEF']}, PERMAV={params['PERMAV']}, "
-        f"THICK={params['THICK']}, POROS={params['POROS']}, NLAYERS={params['NLAYERS']}"
+        f"Created '{output_file}' with: DPCOEF={params['DPCOEF']:.2f}, PERMAV={params['PERMAV']:.1f}, "
+        f"POROS={params['POROS']:.3f}, MMP={params['MMP']:.0f}, SOINIT={params['SOINIT']:.3f}, "
+        f"SWINIT={params['SWINIT']:.3f}, XKVH={params['XKVH']:.2f}"
     )
 
 
@@ -118,9 +149,11 @@ def process_csv_and_generate_input_files(
             params = {
                 "DPCOEF": float(row["DPCOEF"]),
                 "PERMAV": float(row["PERMAV"]),
-                "THICK": float(row["THICK"]),
                 "POROS": float(row["POROS"]),
-                "NLAYERS": int(row["NLAYERS"]),
+                "MMP": float(row["MMP"]),
+                "SOINIT": float(row["SOINIT"]),
+                "SWINIT": float(row["SWINIT"]),
+                "XKVH": float(row["XKVH"]),
             }
             output_file = f"{output_file_dir}/{output_prefix}{run_number}.SAV".upper()
             generate_input_file(base_file, output_file, params)

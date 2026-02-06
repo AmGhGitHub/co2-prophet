@@ -233,9 +233,10 @@ def run_tasks(tasks_config):
             custom_ranges = {
                 "dpcoef_range": config["dpcoef_range"],
                 "permav_range": config["permav_range"],
-                "thick_range": config["thick_range"],
                 "poros_range": config["poros_range"],
-                "nlayers_range": config["nlayers_range"],
+                "mmp_range": config["mmp_range"],
+                "soinit_range": config["soinit_range"],
+                "xkvh_range": config["xkvh_range"],
             }
 
             generate_sensitivity_csv(

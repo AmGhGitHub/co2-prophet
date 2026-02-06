@@ -50,19 +50,21 @@ PLOTTER_CONFIG = {
 PARAMETER_GENERATOR_CONFIG = {
     "output_file": str(INPUT_CSV_FILE),
     "backup_dir": str(PROPHET_CSV_VARS_DIR),
-    "n_runs": 100,  # Number of parameter sets to generate
+    "n_runs": 200,  # Number of parameter sets to generate
     "seed": 42,  # Random seed (set to None for different data each run)
     "dpcoef_range": (0.7, 0.95),
     "permav_range": (100, 1000),
-    "thick_range": (14, 16),
     "poros_range": (0.08, 0.13),
-    "nlayers_range": (3, 9),
+    "mmp_range": (1200, 1500),
+    "soinit_range": (0.4, 0.6),
+    "xkvh_range": (0.01, 0.1),
     "distributions": {
         "DPCOEF": "uniform",
         "PERMAV": "lognormal",
-        "THICK": "uniform",
         "POROS": "normal",
-        "NLAYERS": "uniform",
+        "MMP": "uniform",
+        "SOINIT": "uniform",
+        "XKVH": "uniform",
     },
 }
 
