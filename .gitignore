@@ -9,4 +9,4 @@ wheels/
 # Virtual environments
 .venv
 *.csv
-sen-runs/
+sen-runs/*.csv
