@@ -20,7 +20,8 @@ PROPHET_CSV_OUTPUT_DIR = Path("C:/vDos/Prophet/sen-output-csv")
 PROPHET_CSV_VARS_DIR = Path("C:/vDos/Prophet/sen-runs")  # Copy of input CSV file
 
 # Visualization outputs
-PLOT_OUTPUT_FILE = PROPHET_CSV_OUTPUT_DIR / "oil_vs_injected.html"
+RESULTS_DIR = BASE_DIR / "results"
+PLOT_OUTPUT_FILE = RESULTS_DIR / "oil_vs_injected.png"
 
 # Configuration parameters for file processing
 OUTPUT_PREFIX = "sen"
@@ -49,7 +50,7 @@ PLOTTER_CONFIG = {
 # Results analyzer configuration
 RESULTS_ANALYZER_CONFIG = {
     "csv_dir": str(PROPHET_CSV_OUTPUT_DIR),
-    "output_file": str(PROPHET_CSV_OUTPUT_DIR / "summary_metrics.csv"),
+    "output_file": str(RESULTS_DIR / "summary_metrics.csv"),
 }
 
 # Parameter generation configuration (sensitivity analysis)

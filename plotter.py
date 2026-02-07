@@ -1,20 +1,23 @@
 """
 CO2 Prophet Results Plotter Module
-Handles visualization of simulation results using Plotly.
+Handles visualization of simulation results using matplotlib.
 """
 
 import os
+
+import matplotlib.pyplot as plt
 import pandas as pd
-import plotly.graph_objects as go
 
 
-def plot_oil_vs_injected(csv_dir: str, output_plot: str = None, verbose: bool = True) -> None:
+def plot_oil_vs_injected(
+    csv_dir: str, output_plot: str = None, verbose: bool = True
+) -> None:
     """
-    Plot Oil produced vs Injected total for all cases using Plotly.
+    Plot Oil produced vs Injected total for all cases using matplotlib.
 
     Args:
         csv_dir: Directory containing CSV files
-        output_plot: Optional path to save the plot as HTML (if None, displays plot)
+        output_plot: Optional path to save the plot (if None, displays plot)
         verbose: If True, print status messages (default: True)
     """
     # Get all CSV files and sort them (only OUTPUT_*.csv files)
@@ -27,8 +30,8 @@ def plot_oil_vs_injected(csv_dir: str, output_plot: str = None, verbose: bool = 
         key=lambda x: int(x.split("_")[1].split(".")[0]),  # Sort by run number
     )
 
-    # Create Plotly figure
-    fig = go.Figure()
+    # Create figure
+    plt.figure(figsize=(16, 10))
 
     # Plot each case
     for csv_file in csv_files:
@@ -39,58 +42,31 @@ def plot_oil_vs_injected(csv_dir: str, output_plot: str = None, verbose: bool = 
         # Read the CSV file
         df = pd.read_csv(file_path)
 
-        # Add trace for this run
-        fig.add_trace(go.Scatter(
-            x=df["Injected total"],
-            y=df["Oil produced"] * 100,
-            mode='lines',
-            name=f"Run {run_number}",
-            line=dict(width=1.5),
-            hovertemplate='<b>Run %{fullData.name}</b><br>' +
-                         'Injected: %{x:.3f} HCPV<br>' +
-                         'Oil Recovery: %{y:.2f}%<br>' +
-                         '<extra></extra>'
-        ))
+        # Plot Oil produced vs Injected total
+        plt.plot(
+            df["Injected total"], df["Oil produced"] * 100, linewidth=1.5, alpha=0.8
+        )
 
-    # Update layout
-    fig.update_layout(
-        title={
-            'text': "Oil Produced vs Injected Total - All Cases",
-            'font': {'size': 18, 'family': 'Arial, sans-serif'},
-            'x': 0.5,
-            'xanchor': 'center'
-        },
-        xaxis=dict(
-            title="Inj. CO2, HCPV",
-            titlefont=dict(size=14),
-            range=[0, None],  # Start from 0
-            gridcolor='lightgray',
-            gridwidth=0.5,
-        ),
-        yaxis=dict(
-            title="Incremental Oil R.F, %OOIP",
-            titlefont=dict(size=14),
-            range=[0, None],  # Start from 0
-            gridcolor='lightgray',
-            gridwidth=0.5,
-        ),
-        hovermode='closest',
-        showlegend=False,  # Hide legend
-        plot_bgcolor='white',
-        autosize=True,  # Auto-resize to container
-        margin=dict(l=60, r=30, t=80, b=60)  # Optimized margins
+    plt.xlabel("Inj. CO2, HCPV", fontsize=14)
+    plt.ylabel("Incremental Oil R.F, %OOIP", fontsize=14)
+    plt.title(
+        "Oil Produced vs Injected Total - All Cases", fontsize=16, fontweight="bold"
     )
 
-    # Add grid
-    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgray')
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgray')
+    # Set axis limits to start at origin (0,0) with no gaps
+    plt.xlim(left=0)
+    plt.ylim(bottom=0)
+
+    plt.grid(True, alpha=0.3, linewidth=0.5)
+    plt.tight_layout()
 
     if output_plot:
-        # Save as HTML for interactive plot
-        if not output_plot.endswith('.html'):
-            output_plot = output_plot.replace('.png', '.html')
-        fig.write_html(output_plot)
+        # Ensure extension is .png
+        if not output_plot.endswith(".png"):
+            output_plot = output_plot.replace(".html", ".png")
+        plt.savefig(output_plot, dpi=300, bbox_inches="tight")
         if verbose:
-            print(f"Interactive plot saved to {output_plot}")
+            print(f"Plot saved to {output_plot}")
+        plt.close()
     else:
-        fig.show()
+        plt.show()
