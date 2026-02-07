@@ -8,13 +8,14 @@ import os
 import pandas as pd
 
 
-def extract_key_metrics(csv_dir: str, output_file: str = None) -> pd.DataFrame:
+def extract_key_metrics(csv_dir: str, output_file: str = None, verbose: bool = True) -> pd.DataFrame:
     """
     Extract oil produced at key injection points (≈1 and ≈2 HCPV) from all runs.
 
     Args:
         csv_dir: Directory containing CSV files with simulation results
         output_file: Optional path to save the summary dataframe as CSV
+        verbose: If True, print status messages (default: True)
 
     Returns:
         DataFrame with columns: RUN, Oil_at_1HCPV, Oil_at_2HCPV
@@ -69,7 +70,8 @@ def extract_key_metrics(csv_dir: str, output_file: str = None) -> pd.DataFrame:
     # Save to file if specified
     if output_file:
         summary_df.to_csv(output_file, index=False)
-        print(f"✓ Saved summary metrics to {output_file}")
+        if verbose:
+            print(f"✓ Saved summary metrics to {output_file}")
 
     return summary_df
 
