@@ -4,6 +4,8 @@ import contextlib
 
 import streamlit as st
 import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
 
 from config import (
     INPUT_GENERATOR_CONFIG,
@@ -36,7 +38,7 @@ def main():
     st.set_page_config(layout="wide")
     st.title("CO2 Prophet — Streamlit UI")
 
-    tab1, tab2, tab3 = st.tabs(["Configure", "Parameters", "Run & Results"])
+    tab1, tab2, tab3 = st.tabs(["Configure", "Parameters", "Results"])
 
     # Configure tab: allow editing of paths used by other tasks
     with tab1:
@@ -203,107 +205,256 @@ def main():
             except Exception as e:
                 st.error(f"Error: {e}")
 
-    # Run & Results tab: select tasks and run
+    # Results tab: Process simulation outputs
     with tab3:
-        st.header("Run tasks & view results")
+        st.header("Process Simulation Results")
+        
         # Load session configs or defaults
         paths_cfg = st.session_state.get("paths_cfg", {})
-        param_dists = st.session_state.get("param_dists", PARAMETER_GENERATOR_CONFIG.get("distributions"))
-        param_ranges = st.session_state.get("param_ranges", {
-            "dpcoef_range": PARAMETER_GENERATOR_CONFIG.get("dpcoef_range"),
-            "poros_range": PARAMETER_GENERATOR_CONFIG.get("poros_range"),
-            "mmp_range": PARAMETER_GENERATOR_CONFIG.get("mmp_range"),
-            "soinit_range": PARAMETER_GENERATOR_CONFIG.get("soinit_range"),
-            "xkvh_range": PARAMETER_GENERATOR_CONFIG.get("xkvh_range"),
-        })
-
-        selected = {}
-        for task_key, task_desc in AVAILABLE_TASKS.items():
-            default = TASKS.get(task_key, False)
-            selected[task_key] = st.checkbox(task_desc, value=default, key=f"task_{task_key}")
-
-        run_btn = st.button("Run selected tasks")
-        log_area = st.empty()
-
-        if run_btn:
-            logs = []
-
-            # Helper to resolve path with session override
-            def path_or(default_key, session_key):
-                return paths_cfg.get(session_key) if session_key in paths_cfg else globals()[default_key]
-
-            # Generate parameters
-            if selected.get("generate_parameters"):
-                out = run_and_capture(
-                    generate_sensitivity_csv,
-                    paths_cfg.get("input_csv") if paths_cfg.get("input_csv") else PARAMETER_GENERATOR_CONFIG["output_file"],
-                    None if st.session_state.get("n_runs", 0) == 0 else int(st.session_state.get("n_runs")),
-                    int(st.session_state.get("seed", PARAMETER_GENERATOR_CONFIG.get("seed", 42))),
-                    param_ranges,
-                    param_dists,
-                    paths_cfg.get("csv_vars_dir", PARAMETER_GENERATOR_CONFIG.get("backup_dir")),
-                    st.session_state.get("use_lhs", PARAMETER_GENERATOR_CONFIG.get("use_lhs", True)),
-                    st.session_state.get("sensitivity_level", PARAMETER_GENERATOR_CONFIG.get("sensitivity_level", "medium")),
-                )
-                logs.append("--- Generate parameters ---\n" + out)
-
-            # Generate input files
-            if selected.get("generate_input_files"):
-                out = run_and_capture(
-                    process_csv_and_generate_input_files,
-                    paths_cfg.get("base_file", INPUT_GENERATOR_CONFIG["base_file"]),
-                    paths_cfg.get("input_csv", INPUT_GENERATOR_CONFIG["csv_file"]),
-                    INPUT_GENERATOR_CONFIG["output_prefix"],
-                    paths_cfg.get("prophet_data_out", INPUT_GENERATOR_CONFIG["output_dir"]),
-                    paths_cfg.get("csv_vars_dir", INPUT_GENERATOR_CONFIG.get("vdos_csv_dir")),
-                )
-                logs.append("--- Generate input files ---\n" + out)
-
-            # Convert outputs to CSV
-            if selected.get("convert_output_to_csv"):
-                out = run_and_capture(
-                    convert_output_to_csv,
-                    paths_cfg.get("prophet_results_dir", OUTPUT_CONVERTER_CONFIG["input_dir"]),
-                    paths_cfg.get("csv_output_dir", OUTPUT_CONVERTER_CONFIG["output_dir"]),
-                )
-                logs.append("--- Convert outputs ---\n" + out)
-
-            # Extract key metrics
-            if selected.get("extract_key_metrics"):
-                out = run_and_capture(
-                    extract_key_metrics,
-                    paths_cfg.get("csv_output_dir", RESULTS_ANALYZER_CONFIG["csv_dir"]),
-                    paths_cfg.get("csv_output_dir", RESULTS_ANALYZER_CONFIG.get("output_file")),
-                )
-                logs.append("--- Extract key metrics ---\n" + out)
-                # Show table if available
+        
+        # Get directories
+        prophet_results_dir = paths_cfg.get("prophet_results_dir", OUTPUT_CONVERTER_CONFIG["input_dir"])
+        csv_output_dir = paths_cfg.get("csv_output_dir", OUTPUT_CONVERTER_CONFIG["output_dir"])
+        
+        st.subheader("📊 Convert OUTPUT Files to CSV")
+        st.info(f"**Input:** {prophet_results_dir}")
+        st.info(f"**Output:** {csv_output_dir}")
+        
+        # Check if OUTPUT files exist
+        if os.path.exists(prophet_results_dir):
+            output_files = [f for f in os.listdir(prophet_results_dir) if f.startswith("OUTPUT_")]
+            st.metric("OUTPUT Files Found", len(output_files))
+        else:
+            st.warning(f"Directory not found: {prophet_results_dir}")
+            output_files = []
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🔄 Convert OUTPUT to CSV", use_container_width=True, disabled=len(output_files) == 0):
+                with st.spinner("Converting OUTPUT files to CSV..."):
+                    try:
+                        # Create output directory if it doesn't exist
+                        os.makedirs(csv_output_dir, exist_ok=True)
+                        
+                        # Convert files
+                        convert_output_to_csv(prophet_results_dir, csv_output_dir)
+                        st.success(f"✅ Converted {len(output_files)} files successfully!")
+                        
+                        # Show converted files
+                        csv_files = [f for f in os.listdir(csv_output_dir) if f.startswith("OUTPUT_") and f.endswith(".csv")]
+                        st.info(f"Created {len(csv_files)} CSV files in {csv_output_dir}")
+                        
+                    except Exception as e:
+                        st.error(f"❌ Error: {e}")
+        
+        with col2:
+            if st.button("📈 Extract Key Metrics", use_container_width=True):
+                with st.spinner("Extracting metrics at 1 & 2 HCPV..."):
+                    try:
+                        # Check if CSV files exist
+                        if not os.path.exists(csv_output_dir):
+                            st.error(f"CSV directory not found: {csv_output_dir}")
+                        else:
+                            csv_files = [f for f in os.listdir(csv_output_dir) if f.startswith("OUTPUT_") and f.endswith(".csv")]
+                            if not csv_files:
+                                st.warning("No OUTPUT CSV files found. Please convert OUTPUT files first.")
+                            else:
+                                # Extract metrics
+                                output_file = os.path.join(csv_output_dir, "summary_metrics.csv")
+                                summary_df = extract_key_metrics(csv_output_dir, output_file)
+                                
+                                st.success(f"✅ Extracted metrics from {len(csv_files)} files")
+                                
+                                # Display summary
+                                st.subheader("Summary Metrics")
+                                st.dataframe(summary_df, use_container_width=True)
+                                
+                                # Display statistics
+                                col_a, col_b = st.columns(2)
+                                with col_a:
+                                    st.metric("Oil at ~1 HCPV (Mean)", f"{summary_df['Oil_at_1HCPV'].mean():.2f}%")
+                                    st.metric("Oil at ~1 HCPV (Std)", f"{summary_df['Oil_at_1HCPV'].std():.2f}%")
+                                with col_b:
+                                    st.metric("Oil at ~2 HCPV (Mean)", f"{summary_df['Oil_at_2HCPV'].mean():.2f}%")
+                                    st.metric("Oil at ~2 HCPV (Std)", f"{summary_df['Oil_at_2HCPV'].std():.2f}%")
+                                
+                    except Exception as e:
+                        st.error(f"❌ Error: {e}")
+        
+        st.markdown("---")
+        
+        # Display summary metrics if they exist
+        st.subheader("📊 Oil Recovery at Key Injection Points")
+        
+        summary_file = os.path.join(csv_output_dir, "summary_metrics.csv")
+        if os.path.exists(summary_file):
+            try:
+                summary_df = pd.read_csv(summary_file)
+                
+                # Display metrics in columns
+                col_a, col_b, col_c = st.columns(3)
+                
+                with col_a:
+                    st.metric("Total Runs", len(summary_df), help="Number of simulation runs")
+                
+                with col_b:
+                    st.metric(
+                        "Oil at ~1 HCPV",
+                        f"{summary_df['Oil_at_1HCPV'].mean():.2f}%",
+                        delta=f"± {summary_df['Oil_at_1HCPV'].std():.2f}%",
+                        help="Mean ± Std Dev"
+                    )
+                
+                with col_c:
+                    st.metric(
+                        "Oil at ~2 HCPV",
+                        f"{summary_df['Oil_at_2HCPV'].mean():.2f}%",
+                        delta=f"± {summary_df['Oil_at_2HCPV'].std():.2f}%",
+                        help="Mean ± Std Dev"
+                    )
+                
+                # Show detailed statistics
+                with st.expander("📈 View Detailed Statistics"):
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.markdown("**Oil Recovery at ~1 HCPV (%OOIP)**")
+                        stats_1 = {
+                            "Mean": f"{summary_df['Oil_at_1HCPV'].mean():.2f}%",
+                            "Std Dev": f"{summary_df['Oil_at_1HCPV'].std():.2f}%",
+                            "Min": f"{summary_df['Oil_at_1HCPV'].min():.2f}%",
+                            "Max": f"{summary_df['Oil_at_1HCPV'].max():.2f}%",
+                            "Median": f"{summary_df['Oil_at_1HCPV'].median():.2f}%",
+                        }
+                        for key, value in stats_1.items():
+                            st.text(f"{key:10}: {value}")
+                    
+                    with col2:
+                        st.markdown("**Oil Recovery at ~2 HCPV (%OOIP)**")
+                        stats_2 = {
+                            "Mean": f"{summary_df['Oil_at_2HCPV'].mean():.2f}%",
+                            "Std Dev": f"{summary_df['Oil_at_2HCPV'].std():.2f}%",
+                            "Min": f"{summary_df['Oil_at_2HCPV'].min():.2f}%",
+                            "Max": f"{summary_df['Oil_at_2HCPV'].max():.2f}%",
+                            "Median": f"{summary_df['Oil_at_2HCPV'].median():.2f}%",
+                        }
+                        for key, value in stats_2.items():
+                            st.text(f"{key:10}: {value}")
+                    
+                    # Show full table
+                    st.markdown("**Full Summary Table**")
+                    st.dataframe(summary_df, use_container_width=True, height=300)
+                
+                # Show Plotly histograms
+                st.markdown("**Distribution Histograms**")
+                col_hist1, col_hist2 = st.columns(2)
+                
+                with col_hist1:
+                    fig1 = go.Figure()
+                    fig1.add_trace(go.Histogram(
+                        x=summary_df['Oil_at_1HCPV'],
+                        nbinsx=20,
+                        name='Frequency',
+                        marker_color='#1f77b4',
+                        opacity=0.7
+                    ))
+                    fig1.add_vline(
+                        x=summary_df['Oil_at_1HCPV'].mean(),
+                        line_dash="dash",
+                        line_color="red",
+                        line_width=2,
+                        annotation_text=f"Mean: {summary_df['Oil_at_1HCPV'].mean():.2f}%",
+                        annotation_position="top right"
+                    )
+                    fig1.update_layout(
+                        title="Distribution at ~1 HCPV",
+                        xaxis_title="Oil Recovery at ~1 HCPV (%OOIP)",
+                        yaxis_title="Frequency",
+                        showlegend=False,
+                        height=400
+                    )
+                    st.plotly_chart(fig1, use_container_width=True)
+                
+                with col_hist2:
+                    fig2 = go.Figure()
+                    fig2.add_trace(go.Histogram(
+                        x=summary_df['Oil_at_2HCPV'],
+                        nbinsx=20,
+                        name='Frequency',
+                        marker_color='#ff7f0e',
+                        opacity=0.7
+                    ))
+                    fig2.add_vline(
+                        x=summary_df['Oil_at_2HCPV'].mean(),
+                        line_dash="dash",
+                        line_color="red",
+                        line_width=2,
+                        annotation_text=f"Mean: {summary_df['Oil_at_2HCPV'].mean():.2f}%",
+                        annotation_position="top right"
+                    )
+                    fig2.update_layout(
+                        title="Distribution at ~2 HCPV",
+                        xaxis_title="Oil Recovery at ~2 HCPV (%OOIP)",
+                        yaxis_title="Frequency",
+                        showlegend=False,
+                        height=400
+                    )
+                    st.plotly_chart(fig2, use_container_width=True)
+                
+            except Exception as e:
+                st.warning(f"Could not load summary metrics: {e}")
+        else:
+            st.info("No summary metrics available. Click 'Extract Key Metrics' button above to generate them.")
+        
+        st.markdown("---")
+        
+        # Plot results
+        st.subheader("📉 Visualization")
+        
+        if st.button("🎨 Generate Plot", use_container_width=True):
+            with st.spinner("Generating plot..."):
                 try:
-                    df = extract_key_metrics(paths_cfg.get("csv_output_dir", RESULTS_ANALYZER_CONFIG["csv_dir"]), None)
-                    st.subheader("Summary metrics")
-                    st.dataframe(df)
-                except Exception:
-                    pass
-
-            # Plot results
-            if selected.get("plot_results"):
-                plot_out = paths_cfg.get("plot_output", PLOTTER_CONFIG.get("output_plot"))
-                # Ensure output directory exists
-                try:
+                    plot_out = paths_cfg.get("plot_output", PLOTTER_CONFIG.get("output_plot"))
+                    
+                    # Change extension to .html for Plotly
+                    if plot_out and not plot_out.endswith('.html'):
+                        plot_out = plot_out.replace('.png', '.html')
+                    
+                    # Ensure output directory exists
                     os.makedirs(os.path.dirname(plot_out), exist_ok=True)
-                except Exception:
-                    pass
-                out = run_and_capture(
-                    plot_oil_vs_injected,
-                    paths_cfg.get("csv_output_dir", PLOTTER_CONFIG["csv_dir"]),
-                    plot_out,
-                )
-                logs.append("--- Plot results ---\n" + out)
-                # Show image if created
-                if plot_out and os.path.exists(plot_out):
-                    st.image(plot_out, caption="Oil vs Injected total", use_column_width=True)
-
-            log_text = "\n".join(logs) if logs else "No tasks selected."
-            log_area.text_area("Execution log", value=log_text, height=400)
+                    
+                    # Generate plot
+                    plot_oil_vs_injected(csv_output_dir, plot_out)
+                    
+                    st.success("✅ Interactive plot generated successfully!")
+                    
+                    # Display plot - read HTML and use components
+                    if os.path.exists(plot_out):
+                        with open(plot_out, 'r', encoding='utf-8') as f:
+                            html_content = f.read()
+                        st.components.v1.html(html_content, height=850, scrolling=True)
+                    
+                except Exception as e:
+                    st.error(f"❌ Error: {e}")
+        
+        st.markdown("---")
+        
+        # View existing results
+        st.subheader("📁 View Results")
+        
+        if os.path.exists(csv_output_dir):
+            csv_files = [f for f in os.listdir(csv_output_dir) if f.endswith(".csv")]
+            if csv_files:
+                selected_file = st.selectbox("Select CSV file to view:", sorted(csv_files))
+                if selected_file:
+                    try:
+                        df = pd.read_csv(os.path.join(csv_output_dir, selected_file))
+                        st.dataframe(df, use_container_width=True, height=400)
+                    except Exception as e:
+                        st.error(f"Error reading file: {e}")
+            else:
+                st.info("No CSV files found in output directory")
 
 
 if __name__ == "__main__":

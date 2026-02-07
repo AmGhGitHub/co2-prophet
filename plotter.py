@@ -1,24 +1,21 @@
 """
 CO2 Prophet Results Plotter Module
-Handles visualization of simulation results.
+Handles visualization of simulation results using Plotly.
 """
 
 import os
-
-import matplotlib.pyplot as plt
 import pandas as pd
+import plotly.graph_objects as go
 
 
 def plot_oil_vs_injected(csv_dir: str, output_plot: str = None) -> None:
     """
-    Plot Oil produced vs Injected total for all cases.
+    Plot Oil produced vs Injected total for all cases using Plotly.
 
     Args:
         csv_dir: Directory containing CSV files
-        output_plot: Optional path to save the plot (if None, displays plot)
+        output_plot: Optional path to save the plot as HTML (if None, displays plot)
     """
-    plt.figure(figsize=(10, 6))
-
     # Get all CSV files and sort them (only OUTPUT_*.csv files)
     csv_files = sorted(
         [
@@ -29,6 +26,9 @@ def plot_oil_vs_injected(csv_dir: str, output_plot: str = None) -> None:
         key=lambda x: int(x.split("_")[1].split(".")[0]),  # Sort by run number
     )
 
+    # Create Plotly figure
+    fig = go.Figure()
+
     # Plot each case
     for csv_file in csv_files:
         file_path = os.path.join(csv_dir, csv_file)
@@ -38,40 +38,69 @@ def plot_oil_vs_injected(csv_dir: str, output_plot: str = None) -> None:
         # Read the CSV file
         df = pd.read_csv(file_path)
 
-        # Plot Oil produced vs Injected total
-        plt.plot(
-            df["Injected total"],
-            df["Oil produced"] * 100,
-            label=f"Run {run_number}",
-            linewidth=1.5,
-        )
+        # Add trace for this run
+        fig.add_trace(go.Scatter(
+            x=df["Injected total"],
+            y=df["Oil produced"] * 100,
+            mode='lines',
+            name=f"Run {run_number}",
+            line=dict(width=1.5),
+            hovertemplate='<b>Run %{fullData.name}</b><br>' +
+                         'Injected: %{x:.3f} HCPV<br>' +
+                         'Oil Recovery: %{y:.2f}%<br>' +
+                         '<extra></extra>'
+        ))
 
-    plt.xlabel("Inj. CO2, HCPV", fontsize=12)
-    plt.ylabel("Incremental Oil R.F, %OOIP", fontsize=12)
-    plt.title(
-        "Oil Produced vs Injected Total - All Cases", fontsize=14, fontweight="bold"
+    # Update layout
+    fig.update_layout(
+        title={
+            'text': "Oil Produced vs Injected Total - All Cases",
+            'font': {'size': 18, 'family': 'Arial, sans-serif'},
+            'x': 0.5,
+            'xanchor': 'center'
+        },
+        xaxis=dict(
+            title="Inj. CO2, HCPV",
+            titlefont=dict(size=14),
+            range=[0, None],  # Start from 0
+            gridcolor='lightgray',
+            gridwidth=0.5,
+        ),
+        yaxis=dict(
+            title="Incremental Oil R.F, %OOIP",
+            titlefont=dict(size=14),
+            range=[0, None],  # Start from 0
+            gridcolor='lightgray',
+            gridwidth=0.5,
+        ),
+        hovermode='closest',
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.15,
+            xanchor="center",
+            x=0.5,
+            font=dict(size=9),
+            bgcolor="rgba(255, 255, 255, 0.8)",
+            bordercolor="gray",
+            borderwidth=1
+        ),
+        plot_bgcolor='white',
+        width=1200,
+        height=700,
+        margin=dict(b=150)  # Extra bottom margin for legend
     )
 
-    # Set axis limits to start at origin (0,0) with no gaps
-    plt.xlim(left=0)
-    plt.ylim(bottom=0)
-
-    # Place legend below plot with multiple columns
-    plt.legend(
-        loc="upper center",
-        bbox_to_anchor=(0.5, -0.15),
-        ncol=10,  # Number of columns in legend
-        fontsize=8,
-        frameon=True,
-        fancybox=True,
-        shadow=True,
-    )
-
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
+    # Add grid
+    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgray')
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgray')
 
     if output_plot:
-        plt.savefig(output_plot, dpi=300, bbox_inches="tight")
-        print(f"Plot saved to {output_plot}")
+        # Save as HTML for interactive plot
+        if not output_plot.endswith('.html'):
+            output_plot = output_plot.replace('.png', '.html')
+        fig.write_html(output_plot)
+        print(f"Interactive plot saved to {output_plot}")
     else:
-        plt.show()
+        fig.show()

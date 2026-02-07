@@ -20,7 +20,7 @@ PROPHET_CSV_OUTPUT_DIR = Path("C:/vDos/Prophet/sen-output-csv")
 PROPHET_CSV_VARS_DIR = Path("C:/vDos/Prophet/sen-runs")  # Copy of input CSV file
 
 # Visualization outputs
-PLOT_OUTPUT_FILE = PROPHET_CSV_OUTPUT_DIR / "oil_vs_injected.png"
+PLOT_OUTPUT_FILE = PROPHET_CSV_OUTPUT_DIR / "oil_vs_injected.html"
 
 # Configuration parameters for file processing
 OUTPUT_PREFIX = "sen"
