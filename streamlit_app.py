@@ -105,7 +105,7 @@ def main():
             
             # Distribution selector
             distributions[pname] = col_dist.selectbox(
-                "", dist_options, index=dist_options.index(default_dists.get(pname, "uniform")), key=f"dist_{pname}", label_visibility="collapsed"
+                f"Distribution for {pname}", dist_options, index=dist_options.index(default_dists.get(pname, "uniform")), key=f"dist_{pname}", label_visibility="collapsed"
             )
 
             # Default values
@@ -113,25 +113,25 @@ def main():
 
             # Uniform: min, max
             if distributions[pname] == "uniform":
-                a = col_a.number_input("", value=float(dmin), key=f"{pname}_a", label_visibility="collapsed")
-                b = col_b.number_input("", value=float(dmax), key=f"{pname}_b", label_visibility="collapsed")
+                a = col_a.number_input(f"{pname} Min", value=float(dmin), key=f"{pname}_a", label_visibility="collapsed")
+                b = col_b.number_input(f"{pname} Max", value=float(dmax), key=f"{pname}_b", label_visibility="collapsed")
                 col_c.empty()
                 custom_ranges[f"{pname.lower()}_range"] = (a, b)
 
             # Triangular: min, mode, max
             elif distributions[pname] == "triangular":
                 default_mode = (dmin + dmax) / 2
-                a = col_a.number_input("", value=float(dmin), key=f"{pname}_a", label_visibility="collapsed")
-                mode = col_b.number_input("", value=float(default_mode), key=f"{pname}_mode", label_visibility="collapsed")
-                c = col_c.number_input("", value=float(dmax), key=f"{pname}_c", label_visibility="collapsed")
+                a = col_a.number_input(f"{pname} Min", value=float(dmin), key=f"{pname}_a", label_visibility="collapsed")
+                mode = col_b.number_input(f"{pname} Mode", value=float(default_mode), key=f"{pname}_mode", label_visibility="collapsed")
+                c = col_c.number_input(f"{pname} Max", value=float(dmax), key=f"{pname}_c", label_visibility="collapsed")
                 custom_ranges[f"{pname.lower()}_range"] = (a, mode, c)
 
             # Normal: mean, std (we convert to min/max = mean ± 3*std for generator)
             elif distributions[pname] == "normal":
                 default_mean = (dmin + dmax) / 2
                 default_std = (dmax - dmin) / 6
-                mean = col_a.number_input("", value=float(default_mean), key=f"{pname}_mean", label_visibility="collapsed")
-                std = col_b.number_input("", value=float(default_std), key=f"{pname}_std", label_visibility="collapsed")
+                mean = col_a.number_input(f"{pname} Mean", value=float(default_mean), key=f"{pname}_mean", label_visibility="collapsed")
+                std = col_b.number_input(f"{pname} Std Dev", value=float(default_std), key=f"{pname}_std", label_visibility="collapsed")
                 col_c.empty()
                 custom_ranges[f"{pname.lower()}_range"] = (mean - 3 * std, mean + 3 * std)
 
