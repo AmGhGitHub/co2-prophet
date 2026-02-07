@@ -69,14 +69,12 @@ PARAMETER_GENERATOR_CONFIG = {
     "seed": 42,  # Random seed (set to None for different data each run)
     "use_lhs": True,  # Use Latin Hypercube Sampling for better parameter space coverage
     "dpcoef_range": (0.7, 0.95),
-    "permav_range": (100, 1000),
     "poros_range": (0.08, 0.13),
     "mmp_range": (1200, 1500),
     "soinit_range": (0.4, 0.6),
     "xkvh_range": (0.01, 0.1),
     "distributions": {
         "DPCOEF": "uniform",
-        "PERMAV": "lognormal",
         "POROS": "normal",
         "MMP": "uniform",
         "SOINIT": "uniform",

@@ -29,7 +29,6 @@ class ParameterGenerator:
         self,
         n_runs: int,
         dpcoef_range=(0.7, 0.95),
-        permav_range=(100, 1000),
         poros_range=(0.08, 0.13),
         mmp_range=(1200, 1500),
         soinit_range=(0.4, 0.6),
@@ -43,14 +42,13 @@ class ParameterGenerator:
         Args:
             n_runs: Number of simulation runs to generate
             dpcoef_range: (min, max) for depletion coefficient
-            permav_range: (min, max) for average permeability (mD)
             poros_range: (min, max) for porosity (fraction)
             mmp_range: (min, max) for minimum miscibility pressure (psi)
             soinit_range: (min, max) for initial oil saturation (fraction)
             xkvh_range: (min, max) for vertical to horizontal permeability ratio
             distributions: Dictionary specifying distribution types for each parameter
-                          Options: 'uniform', 'normal', 'lognormal', 'triangular'
-                          Example: {'DPCOEF': 'uniform', 'PERMAV': 'lognormal'}
+                          Options: 'uniform', 'normal', 'triangular'
+                          Example: {'DPCOEF': 'uniform', 'POROS': 'normal'}
             use_lhs: If True, use Latin Hypercube Sampling for better space coverage
 
         Returns:
@@ -59,7 +57,6 @@ class ParameterGenerator:
         if distributions is None:
             distributions = {
                 "DPCOEF": "uniform",
-                "PERMAV": "lognormal",
                 "POROS": "normal",
                 "MMP": "uniform",
                 "SOINIT": "uniform",
@@ -67,10 +64,9 @@ class ParameterGenerator:
             }
 
         # Parameter names and ranges
-        param_names = ["DPCOEF", "PERMAV", "POROS", "MMP", "SOINIT", "XKVH"]
+        param_names = ["DPCOEF", "POROS", "MMP", "SOINIT", "XKVH"]
         param_ranges = [
             dpcoef_range,
-            permav_range,
             poros_range,
             mmp_range,
             soinit_range,
@@ -116,11 +112,6 @@ class ParameterGenerator:
                 # Generate DPCOEF
                 params["DPCOEF"] = self._generate_value(
                     "DPCOEF", dpcoef_range, distributions.get("DPCOEF", "uniform")
-                )
-
-                # Generate PERMAV
-                params["PERMAV"] = self._generate_value(
-                    "PERMAV", permav_range, distributions.get("PERMAV", "lognormal")
                 )
 
                 # Generate POROS
@@ -187,8 +178,11 @@ class ParameterGenerator:
             return np.clip(value, min_val, max_val)
 
         elif distribution == "triangular":
-            # Triangular with mode at center
-            mode = (min_val + max_val) / 2
+            # Allow value_range to be either (min, max) or (min, mode, max)
+            if len(value_range) == 3:
+                min_val, mode, max_val = value_range
+            else:
+                mode = (min_val + max_val) / 2
             return np.random.triangular(min_val, mode, max_val)
 
         else:
@@ -240,7 +234,12 @@ class ParameterGenerator:
 
         elif distribution == "triangular":
             # Transform using triangular distribution
-            mode = (min_val + max_val) / 2
+            # Accept value_range as (min, max) or (min, mode, max)
+            if len(value_range) == 3:
+                min_val, mode, max_val = value_range
+            else:
+                mode = (min_val + max_val) / 2
+
             c = (mode - min_val) / (max_val - min_val)  # Mode parameter
             value = stats.triang.ppf(
                 uniform_sample, c=c, loc=min_val, scale=max_val - min_val
@@ -262,7 +261,6 @@ class ParameterGenerator:
         fieldnames = [
             "RUN",
             "DPCOEF",
-            "PERMAV",
             "POROS",
             "MMP",
             "SOINIT",
@@ -294,7 +292,7 @@ class ParameterGenerator:
             return f"{value:.2f}"
         elif param_name == "MMP":
             return f"{value:.0f}"
-        else:  # PERMAV
+        else:
             return f"{value:.1f}"
 
 
@@ -358,7 +356,6 @@ def generate_sensitivity_csv(
     # Default ranges
     ranges = {
         "dpcoef_range": (0.7, 1.0),
-        "permav_range": (10, 200),
         "poros_range": (0.15, 0.35),
         "mmp_range": (1200, 1500),
         "soinit_range": (0.4, 0.6),
@@ -371,7 +368,7 @@ def generate_sensitivity_csv(
 
     # Auto-calculate number of runs if not specified
     if n_runs is None:
-        n_params = 6  # DPCOEF, PERMAV, POROS, MMP, SOINIT, XKVH
+        n_params = 5  # DPCOEF, POROS, MMP, SOINIT, XKVH
         n_runs = calculate_recommended_runs(n_params, sensitivity_level)
         print(
             f"Auto-calculated {n_runs} runs for {n_params} parameters (sensitivity level: {sensitivity_level})"
@@ -385,7 +382,6 @@ def generate_sensitivity_csv(
     # Format values for better readability
     for params in params_list:
         params["DPCOEF"] = round(params["DPCOEF"], 2)
-        params["PERMAV"] = round(params["PERMAV"], 1)
         params["POROS"] = round(params["POROS"], 3)
         params["MMP"] = round(params["MMP"], 0)
         params["SOINIT"] = round(params["SOINIT"], 3)

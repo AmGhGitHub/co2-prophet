@@ -148,7 +148,7 @@ def process_csv_and_generate_input_files(
             run_number = int(row["RUN"])
             params = {
                 "DPCOEF": float(row["DPCOEF"]),
-                "PERMAV": float(row["PERMAV"]),
+                "PERMAV": 500.0,  # Fixed default value (PERMAV is no longer a sensitivity parameter)
                 "POROS": float(row["POROS"]),
                 "MMP": float(row["MMP"]),
                 "SOINIT": float(row["SOINIT"]),
