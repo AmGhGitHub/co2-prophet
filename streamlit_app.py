@@ -262,7 +262,7 @@ def main():
                             else:
                                 # Extract metrics
                                 output_file = os.path.join(csv_output_dir, "summary_metrics.csv")
-                                summary_df = extract_key_metrics(csv_output_dir, output_file)
+                                summary_df = extract_key_metrics(csv_output_dir, output_file, verbose=False)
                                 
                                 st.success(f"✅ Extracted metrics from {len(csv_files)} files")
                                 
@@ -425,7 +425,7 @@ def main():
                     os.makedirs(os.path.dirname(plot_out), exist_ok=True)
                     
                     # Generate plot
-                    plot_oil_vs_injected(csv_output_dir, plot_out)
+                    plot_oil_vs_injected(csv_output_dir, plot_out, verbose=False)
                     
                     st.success("✅ Interactive plot generated successfully!")
                     
@@ -433,7 +433,7 @@ def main():
                     if os.path.exists(plot_out):
                         with open(plot_out, 'r', encoding='utf-8') as f:
                             html_content = f.read()
-                        st.components.v1.html(html_content, height=850, scrolling=True)
+                        st.components.v1.html(html_content, height=900, scrolling=False)
                     
                 except Exception as e:
                     st.error(f"❌ Error: {e}")

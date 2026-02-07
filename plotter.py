@@ -8,13 +8,14 @@ import pandas as pd
 import plotly.graph_objects as go
 
 
-def plot_oil_vs_injected(csv_dir: str, output_plot: str = None) -> None:
+def plot_oil_vs_injected(csv_dir: str, output_plot: str = None, verbose: bool = True) -> None:
     """
     Plot Oil produced vs Injected total for all cases using Plotly.
 
     Args:
         csv_dir: Directory containing CSV files
         output_plot: Optional path to save the plot as HTML (if None, displays plot)
+        verbose: If True, print status messages (default: True)
     """
     # Get all CSV files and sort them (only OUTPUT_*.csv files)
     csv_files = sorted(
@@ -74,22 +75,10 @@ def plot_oil_vs_injected(csv_dir: str, output_plot: str = None) -> None:
             gridwidth=0.5,
         ),
         hovermode='closest',
-        showlegend=True,
-        legend=dict(
-            orientation="h",
-            yanchor="top",
-            y=-0.15,
-            xanchor="center",
-            x=0.5,
-            font=dict(size=9),
-            bgcolor="rgba(255, 255, 255, 0.8)",
-            bordercolor="gray",
-            borderwidth=1
-        ),
+        showlegend=False,  # Hide legend
         plot_bgcolor='white',
-        width=1200,
-        height=700,
-        margin=dict(b=150)  # Extra bottom margin for legend
+        autosize=True,  # Auto-resize to container
+        margin=dict(l=60, r=30, t=80, b=60)  # Optimized margins
     )
 
     # Add grid
@@ -101,6 +90,7 @@ def plot_oil_vs_injected(csv_dir: str, output_plot: str = None) -> None:
         if not output_plot.endswith('.html'):
             output_plot = output_plot.replace('.png', '.html')
         fig.write_html(output_plot)
-        print(f"Interactive plot saved to {output_plot}")
+        if verbose:
+            print(f"Interactive plot saved to {output_plot}")
     else:
         fig.show()
