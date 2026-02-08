@@ -6,6 +6,8 @@ Handles conversion of OUTPUT files to CSV format.
 import csv
 import os
 
+from config import PROPHET_CSV_OUTPUT_DIR, PROPHET_OUTPUT_DIR
+
 # Let's try git
 
 
@@ -18,7 +20,7 @@ def convert_output_to_csv(input_dir: str, output_dir: str) -> None:
         output_dir: Directory to save CSV files
     """
     # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
+    # os.makedirs(output_dir, exist_ok=True)
 
     # Process all OUTPUT_* files
     for filename in os.listdir(input_dir):
@@ -51,6 +53,4 @@ def convert_output_to_csv(input_dir: str, output_dir: str) -> None:
 
 
 if __name__ == "__main__":
-    convert_output_to_csv(
-        "c:/vDos/Prophet/sen-output", "c:/vDos/Prophet/sen-output-csv"
-    )
+    convert_output_to_csv(PROPHET_OUTPUT_DIR, PROPHET_CSV_OUTPUT_DIR)

@@ -14,8 +14,8 @@ BASE_FILE = BASE_DIR / "base"
 INPUT_CSV_FILE = BASE_DIR / "sen-runs" / "sen_fbv.csv"
 
 # Output directories for Prophet simulations
-PROPHET_DATA_OUTPUT_DIR = Path("C:/vDos/Prophet/sen-datafiles")
-PROPHET_RESULTS_DIR = Path("C:/vDos/Prophet/sen-output")
+PROPHET_DATAFILE_DIR = Path("C:/vDos/Prophet/sen-datafiles")
+PROPHET_OUTPUT_DIR = Path("C:/vDos/Prophet/sen-output")
 PROPHET_CSV_OUTPUT_DIR = Path("C:/vDos/Prophet/sen-output-csv")
 PROPHET_CSV_VARS_DIR = Path("C:/vDos/Prophet/sen-runs")  # Copy of input CSV file
 
@@ -31,13 +31,13 @@ INPUT_GENERATOR_CONFIG = {
     "base_file": str(BASE_FILE),
     "csv_file": str(INPUT_CSV_FILE),
     "output_prefix": OUTPUT_PREFIX,
-    "output_dir": str(PROPHET_DATA_OUTPUT_DIR),
+    "output_dir": str(PROPHET_DATAFILE_DIR),
     "vdos_csv_dir": str(PROPHET_CSV_VARS_DIR),
 }
 
 # Output converter configuration
 OUTPUT_CONVERTER_CONFIG = {
-    "input_dir": str(PROPHET_RESULTS_DIR),
+    "input_dir": str(PROPHET_OUTPUT_DIR),
     "output_dir": str(PROPHET_CSV_OUTPUT_DIR),
 }
 
@@ -86,17 +86,13 @@ PARAMETER_GENERATOR_CONFIG = {
 # Task configuration - Enable/disable specific tasks
 TASKS = {
     "generate_parameters": False,  # Generate random parameters for sensitivity analysis
-    "generate_input_files": True,  # Generate input files from CSV
-    "convert_output_to_csv": True,  # Convert OUTPUT files to CSV
     "extract_key_metrics": True,  # Extract oil produced at 1 and 2 HCPV
     "plot_results": True,  # Plot Oil produced vs Injected total
 }
 
 # Available tasks description
 AVAILABLE_TASKS = {
-    "generate_parameters": "Generate random parameters for sensitivity analysis",
-    "generate_input_files": "Generate input files from CSV parameters",
-    "convert_output_to_csv": "Convert simulation outputs files to csv format",
+    "generate_parameters": "Generate parameters & input files (combined)",
     "extract_key_metrics": "Extract key metrics (Oil at 1 & 2 HCPV) from results",
     "plot_results": "Plot Oil produced vs Injected total",
 }
@@ -108,8 +104,8 @@ def get_all_paths():
         "PROJECT_ROOT": str(PROJECT_ROOT),
         "BASE_FILE": str(BASE_FILE),
         "INPUT_CSV_FILE": str(INPUT_CSV_FILE),
-        "PROPHET_DATA_OUTPUT_DIR": str(PROPHET_DATA_OUTPUT_DIR),
-        "PROPHET_RESULTS_DIR": str(PROPHET_RESULTS_DIR),
+        "PROPHET_DATAFILE_DIR": str(PROPHET_DATAFILE_DIR),
+        "PROPHET_OUTPUT_DIR": str(PROPHET_OUTPUT_DIR),
         "PROPHET_CSV_OUTPUT_DIR": str(PROPHET_CSV_OUTPUT_DIR),
         "PROPHET_CSV_VARS_DIR": str(PROPHET_CSV_VARS_DIR),
         "PLOT_OUTPUT_FILE": str(PLOT_OUTPUT_FILE),

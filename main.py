@@ -161,7 +161,7 @@ def prompt_user_for_tasks():
     for idx, (task_name, description) in enumerate(tasks_list, 1):
         print(f"{idx}. {description}")
 
-    print(f"{len(tasks_list) + 1}. Run tasks 2&3 (Convert outputs + Plot)")
+    print(f"{len(tasks_list) + 1}. Run tasks 2&3 (Extract metrics + Plot)")
     print(f"{len(tasks_list) + 2}. Run ALL tasks")
     print("0. Exit without running anything\n")
 
@@ -193,10 +193,9 @@ def prompt_user_for_tasks():
                 for task_name, _ in tasks_list:
                     tasks_config[task_name] = True
             elif (len(tasks_list) + 1) in selected:
-                # Run tasks 3&4 (option 5: convert + plot)
+                # Run tasks 2&3 (option 4: extract metrics + plot)
                 tasks_config["generate_parameters"] = False
-                tasks_config["generate_input_files"] = False
-                tasks_config["convert_output_to_csv"] = True
+                tasks_config["extract_key_metrics"] = True
                 tasks_config["plot_results"] = True
             else:
                 # Run selected tasks only
@@ -292,6 +291,26 @@ def run_tasks(tasks_config):
         try:
             config = PARAMETER_GENERATOR_CONFIG
 
+            # Empty the PROPHET_DATAFILE_DIR folder before generating
+            datafile_dir = INPUT_GENERATOR_CONFIG["output_dir"]
+            if os.path.exists(datafile_dir):
+                print(f"Cleaning datafile directory: {datafile_dir}")
+                import shutil
+
+                for item in os.listdir(datafile_dir):
+                    item_path = os.path.join(datafile_dir, item)
+                    try:
+                        if os.path.isfile(item_path) or os.path.islink(item_path):
+                            os.unlink(item_path)
+                        elif os.path.isdir(item_path):
+                            shutil.rmtree(item_path)
+                    except Exception as e:
+                        print_error(f"Failed to delete {item_path}: {e}")
+                print(f"✓ Cleaned {datafile_dir}\n")
+            else:
+                os.makedirs(datafile_dir, exist_ok=True)
+                print(f"✓ Created directory: {datafile_dir}\n")
+
             # Prompt for sensitivity level if running interactively
             sensitivity_level = prompt_sensitivity_level()
             if sensitivity_level is None:
@@ -322,10 +341,37 @@ def run_tasks(tasks_config):
             )
             actual_runs = config["n_runs"] if config["n_runs"] else "auto-calculated"
             print(f"✓ Generated {actual_runs} parameter sets successfully\n")
+
+            # Automatically generate input files after parameter generation
+            print("[1/5] Generating input files from CSV (auto)...")
+            try:
+                # Check if base file exists
+                base_file = INPUT_GENERATOR_CONFIG["base_file"]
+                if not os.path.exists(base_file):
+                    raise FileNotFoundError(f"Base file not found: {base_file}")
+
+                # Check if CSV file exists
+                csv_file = INPUT_GENERATOR_CONFIG["csv_file"]
+                if not os.path.exists(csv_file):
+                    raise FileNotFoundError(f"CSV file not found: {csv_file}")
+
+                process_csv_and_generate_input_files(
+                    base_file,
+                    csv_file,
+                    INPUT_GENERATOR_CONFIG["output_prefix"],
+                    INPUT_GENERATOR_CONFIG["output_dir"],
+                    INPUT_GENERATOR_CONFIG["vdos_csv_dir"],
+                )
+                print("✓ Input files generated successfully\n")
+            except FileNotFoundError as e:
+                print_error(f"File not found: {e}\n")
+            except Exception as e:
+                print_error(f"Error generating input files: {e}\n")
+
         except Exception as e:
             print_error(f"Error generating parameters: {e}\n")
 
-    if tasks_config.get("generate_input_files"):
+    elif tasks_config.get("generate_input_files"):
         print("[1/5] Generating input files from CSV...")
         try:
             # Check if base file exists
