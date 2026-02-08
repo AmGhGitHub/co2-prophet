@@ -41,8 +41,8 @@ def analyze_correlations(csv_file: str, output_dir: str = None, verbose: bool = 
         print(f"Complete runs: {len(df_complete)}")
         print(f"Incomplete runs: {len(df) - len(df_complete)}\n")
 
-    # Parameters to analyze
-    params = ["DPCOEF", "POROS", "MMP", "SOINIT", "SWINIT", "XKVH"]
+    # Parameters to analyze (excluding SWINIT since SWINIT = 1.0 - SOINIT)
+    params = ["DPCOEF", "POROS", "MMP", "SOINIT", "XKVH"]
     targets = ["Oil_at_1HCPV", "Oil_at_2HCPV"]
 
     # Calculate correlations
@@ -84,8 +84,8 @@ def build_ml_models(csv_file: str, output_dir: str = None, verbose: bool = True)
     df = pd.read_csv(csv_file)
     df_complete = df.dropna(subset=["Oil_at_1HCPV", "Oil_at_2HCPV"])
 
-    # Prepare features and targets
-    params = ["DPCOEF", "POROS", "MMP", "SOINIT", "SWINIT", "XKVH"]
+    # Prepare features and targets (excluding SWINIT since SWINIT = 1.0 - SOINIT)
+    params = ["DPCOEF", "POROS", "MMP", "SOINIT", "XKVH"]
     X = df_complete[params].values
     y_1hcpv = df_complete["Oil_at_1HCPV"].values
     y_2hcpv = df_complete["Oil_at_2HCPV"].values
@@ -177,11 +177,22 @@ def build_ml_models(csv_file: str, output_dir: str = None, verbose: bool = True)
                     f"  CV R² (mean):   {cv_scores.mean():.4f} ± {cv_scores.std():.4f}"
                 )
 
+                # Display Linear Regression equation
+                if model_name == "Linear Regression":
+                    print(f"\n  Linear Regression Equation:")
+                    print(f"  {target_name} = {model.intercept_:.4f}")
+                    for i, param in enumerate(params):
+                        coef = model.coef_[i]
+                        sign = "+" if coef >= 0 else ""
+                        print(f"              {sign} {coef:.4f} * {param}_scaled")
+                    print(f"\n  Note: Features are standardized (scaled)")
+
     # Save results and plots
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
         _save_model_plots(results, params, output_dir)
         _save_feature_importance(results, params, output_dir)
+        _save_regression_equations(results, params, scaler, output_dir)
 
     # Save scaler for future predictions
     results["scaler"] = scaler
@@ -334,6 +345,61 @@ def _save_feature_importance(results, params, output_dir):
         plt.savefig(os.path.join(output_dir, filename), dpi=300)
         plt.close()
         print(f"✓ Saved feature importance to {output_dir}/{filename}")
+
+
+def _save_regression_equations(results, params, scaler, output_dir):
+    """Save linear regression equations to text file."""
+    output_file = os.path.join(output_dir, "regression_equations.txt")
+
+    with open(output_file, "w") as f:
+        f.write("=" * 80 + "\n")
+        f.write("LINEAR REGRESSION EQUATIONS\n")
+        f.write("=" * 80 + "\n\n")
+        f.write("Note: These equations use STANDARDIZED (scaled) features.\n")
+        f.write(f"Scaling parameters - Mean and Std Dev for each feature:\n\n")
+
+        # Write scaling parameters
+        for i, param in enumerate(params):
+            f.write(
+                f"  {param:10} : mean = {scaler.mean_[i]:8.4f}, std = {scaler.scale_[i]:8.4f}\n"
+            )
+
+        f.write("\n" + "=" * 80 + "\n\n")
+
+        # Write equations for each target
+        for target in ["Oil_at_1HCPV", "Oil_at_2HCPV"]:
+            if "Linear Regression" in results[target]:
+                model = results[target]["Linear Regression"]["model"]
+                r2 = results[target]["Linear Regression"]["r2_test"]
+
+                f.write(f"Target: {target}\n")
+                f.write("-" * 80 + "\n\n")
+                f.write(f"R² Score (test): {r2:.4f}\n\n")
+                f.write("Equation (scaled features):\n")
+                f.write(f"  {target} = {model.intercept_:.6f}\n")
+
+                for i, param in enumerate(params):
+                    coef = model.coef_[i]
+                    sign = "+" if coef >= 0 else ""
+                    f.write(f"             {sign} {coef:.6f} * {param}_scaled\n")
+
+                f.write("\n\nTo use this equation:\n")
+                f.write("1. Standardize input parameters:\n")
+                f.write(f"   {param}_scaled = ({param} - mean) / std\n")
+                f.write("2. Apply the equation above with scaled values\n")
+                f.write("3. Result is the predicted oil recovery in %OOIP\n")
+                f.write("\n" + "=" * 80 + "\n\n")
+
+        f.write("\nExample calculation:\n")
+        f.write("-" * 80 + "\n")
+        f.write(
+            "If you have: DPCOEF=0.85, POROS=0.10, MMP=1350, SOINIT=0.50, SWINIT=0.50, XKVH=0.05\n\n"
+        )
+        f.write("1. Standardize each parameter using the mean and std above\n")
+        f.write("2. Plug scaled values into the equation\n")
+        f.write("3. The result is the predicted oil recovery\n\n")
+
+    print(f"✓ Saved regression equations to {output_dir}/regression_equations.txt")
 
 
 if __name__ == "__main__":
