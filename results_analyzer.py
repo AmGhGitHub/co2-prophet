@@ -8,7 +8,9 @@ import os
 import pandas as pd
 
 
-def extract_key_metrics(csv_dir: str, output_file: str = None, verbose: bool = True) -> pd.DataFrame:
+def extract_key_metrics(
+    csv_dir: str, output_file: str = None, verbose: bool = True
+) -> pd.DataFrame:
     """
     Extract oil produced at key injection points (≈1 and ≈2 HCPV) from all runs.
 
@@ -142,3 +144,43 @@ def print_summary_statistics(summary_df: pd.DataFrame):
         print(f"  Max:    {summary_df['Oil_at_2HCPV'].max():.3f}\n")
 
     print("=" * 60 + "\n")
+
+
+def merge_parameters_with_results(
+    params_csv: str, metrics_csv: str, output_file: str = None, verbose: bool = True
+) -> pd.DataFrame:
+    """
+    Merge parameter CSV with metrics results based on RUN number.
+
+    Args:
+        params_csv: Path to parameters CSV file (e.g., sen_fbv.csv)
+        metrics_csv: Path to metrics CSV file (e.g., summary_metrics.csv)
+        output_file: Optional path to save merged dataframe as CSV
+        verbose: If True, print status messages (default: True)
+
+    Returns:
+        DataFrame with merged parameters and results
+    """
+    # Read both CSV files
+    params_df = pd.read_csv(params_csv)
+    metrics_df = pd.read_csv(metrics_csv)
+
+    # Merge on RUN number using LEFT join to keep all parameter runs
+    merged_df = pd.merge(params_df, metrics_df, on="RUN", how="left")
+
+    # Count complete and incomplete runs
+    complete_runs = merged_df["Oil_at_1HCPV"].notna().sum()
+    incomplete_runs = merged_df["Oil_at_1HCPV"].isna().sum()
+
+    # Save to file if specified
+    if output_file:
+        merged_df.to_csv(output_file, index=False)
+        if verbose:
+            print(f"✓ Merged parameters with results:")
+            print(f"  Total runs: {len(merged_df)}")
+            print(f"  Complete runs: {complete_runs}")
+            if incomplete_runs > 0:
+                print(f"  Incomplete runs (null results): {incomplete_runs}")
+            print(f"✓ Saved to {output_file}\n")
+
+    return merged_df

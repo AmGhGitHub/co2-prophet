@@ -23,7 +23,11 @@ from input_generator import process_csv_and_generate_input_files
 from output_converter import convert_output_to_csv
 from param_generator import generate_sensitivity_csv
 from plotter import plot_oil_vs_injected
-from results_analyzer import extract_key_metrics, print_summary_statistics
+from results_analyzer import (
+    extract_key_metrics,
+    merge_parameters_with_results,
+    print_summary_statistics,
+)
 
 
 # ANSI color codes for terminal output
@@ -451,6 +455,28 @@ def run_tasks(tasks_config):
                     summary_df = extract_key_metrics(csv_dir, output_file)
                     print_summary_statistics(summary_df)
                     print("✓ Key metrics extracted successfully\n")
+
+                    # Automatically merge with parameters CSV
+                    print("Merging parameters with results...")
+                    try:
+                        params_csv = PARAMETER_GENERATOR_CONFIG["output_file"]
+                        results_dir = os.path.dirname(output_file)
+                        merged_output = os.path.join(
+                            results_dir, "sen_fbv_with_results.csv"
+                        )
+
+                        if os.path.exists(params_csv):
+                            merge_parameters_with_results(
+                                params_csv=params_csv,
+                                metrics_csv=output_file,
+                                output_file=merged_output,
+                                verbose=True,
+                            )
+                        else:
+                            print(f"⚠ Parameters CSV not found: {params_csv}")
+                            print("  Skipping merge step.\n")
+                    except Exception as e:
+                        print_error(f"Error merging files: {e}\n")
         except Exception as e:
             print_error(f"Error extracting metrics: {e}\n")
 
@@ -477,6 +503,39 @@ def run_tasks(tasks_config):
                     print("✓ Results plotted successfully\n")
         except Exception as e:
             print_error(f"Error plotting results: {e}\n")
+
+    if tasks_config.get("ml_analysis"):
+        print("[5/5] Running machine learning analysis...")
+        try:
+            from ml_analyzer import analyze_correlations, build_ml_models
+
+            # Get paths
+            results_dir = os.path.dirname(RESULTS_ANALYZER_CONFIG["output_file"])
+            merged_csv = os.path.join(results_dir, "sen_fbv_with_results.csv")
+
+            # Check if merged CSV exists
+            if not os.path.exists(merged_csv):
+                print(f"⚠ Merged CSV not found: {merged_csv}")
+                print(
+                    f"  Run 'Extract key metrics' task first to generate this file.\n"
+                )
+            else:
+                # Run correlation analysis
+                print("\nStep 1: Analyzing correlations...")
+                correlations = analyze_correlations(
+                    merged_csv, results_dir, verbose=True
+                )
+
+                # Build ML models
+                print("\nStep 2: Building predictive models...")
+                models = build_ml_models(merged_csv, results_dir, verbose=True)
+
+                print("✓ Machine learning analysis completed successfully\n")
+        except ImportError as e:
+            print_error(f"Missing required libraries for ML analysis: {e}")
+            print("  Install with: pip install scikit-learn seaborn\n")
+        except Exception as e:
+            print_error(f"Error in ML analysis: {e}\n")
 
     print("=" * 60)
     print("Pipeline completed!")

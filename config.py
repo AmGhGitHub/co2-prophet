@@ -88,6 +88,7 @@ TASKS = {
     "generate_parameters": False,  # Generate random parameters for sensitivity analysis
     "extract_key_metrics": True,  # Extract oil produced at 1 and 2 HCPV
     "plot_results": True,  # Plot Oil produced vs Injected total
+    "ml_analysis": False,  # Machine learning analysis
 }
 
 # Available tasks description
@@ -95,6 +96,7 @@ AVAILABLE_TASKS = {
     "generate_parameters": "Generate parameters & input files (combined)",
     "extract_key_metrics": "Extract key metrics (Oil at 1 & 2 HCPV) from results",
     "plot_results": "Plot Oil produced vs Injected total",
+    "ml_analysis": "Machine Learning analysis (correlations & predictive models)",
 }
 
 
