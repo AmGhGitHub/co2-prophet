@@ -243,7 +243,7 @@ def prompt_sensitivity_level():
         5: ("very_high", "~600 runs", "Comprehensive analysis"),
     }
 
-    print("Choose sensitivity level for parameter generation (6 parameters):\n")
+    print("Choose sensitivity level for parameter generation (5 parameters):\n")
     for key, (level, runs, desc) in sensitivity_options.items():
         marker = " [Recommended]" if level == "medium" else ""
         print(
@@ -304,7 +304,6 @@ def run_tasks(tasks_config):
             # Prepare custom ranges
             custom_ranges = {
                 "dpcoef_range": config["dpcoef_range"],
-                "permav_range": config["permav_range"],
                 "poros_range": config["poros_range"],
                 "mmp_range": config["mmp_range"],
                 "soinit_range": config["soinit_range"],

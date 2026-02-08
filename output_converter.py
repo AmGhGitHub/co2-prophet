@@ -48,3 +48,9 @@ def convert_output_to_csv(input_dir: str, output_dir: str) -> None:
                             writer.writerow(values)
 
             print(f"Converted {filename} -> {output_file}")
+
+
+if __name__ == "__main__":
+    convert_output_to_csv(
+        "c:/vDos/Prophet/sen-output", "c:/vDos/Prophet/sen-output-csv"
+    )
