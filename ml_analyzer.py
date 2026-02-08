@@ -12,7 +12,7 @@ from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import cross_val_score, train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 
 
 def analyze_correlations(csv_file: str, output_dir: str = None, verbose: bool = True):
@@ -104,17 +104,24 @@ def build_ml_models(csv_file: str, output_dir: str = None, verbose: bool = True)
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
+    # Create polynomial features for Linear Regression (degree=2 with interactions)
+    poly = PolynomialFeatures(degree=2, include_bias=False)
+    X_train_poly = poly.fit_transform(X_train_scaled)
+    X_test_poly = poly.transform(X_test_scaled)
+    poly_feature_names = poly.get_feature_names_out(params)
+
     if verbose:
         print("\n" + "=" * 70)
         print("MACHINE LEARNING MODEL TRAINING")
         print("=" * 70)
         print(f"\nTraining set: {len(X_train)} samples")
         print(f"Test set: {len(X_test)} samples")
-        print(f"Features: {', '.join(params)}\n")
+        print(f"Features: {', '.join(params)}")
+        print(f"Polynomial features (degree=2): {len(poly_feature_names)} terms\n")
 
     # Train models
     models = {
-        "Linear Regression": LinearRegression(),
+        "Polynomial Regression (degree=2)": LinearRegression(),
         "Random Forest": RandomForestRegressor(
             n_estimators=100, random_state=42, max_depth=10
         ),
@@ -124,6 +131,8 @@ def build_ml_models(csv_file: str, output_dir: str = None, verbose: bool = True)
     }
 
     results = {}
+    results["poly_features"] = poly
+    results["poly_feature_names"] = poly_feature_names
 
     for target_name, y_train, y_test in [
         ("Oil_at_1HCPV", y1_train, y1_test),
@@ -137,12 +146,20 @@ def build_ml_models(csv_file: str, output_dir: str = None, verbose: bool = True)
         results[target_name] = {}
 
         for model_name, model in models.items():
+            # Use polynomial features for Polynomial Regression, regular features for others
+            if "Polynomial" in model_name:
+                X_train_model = X_train_poly
+                X_test_model = X_test_poly
+            else:
+                X_train_model = X_train_scaled
+                X_test_model = X_test_scaled
+
             # Train model
-            model.fit(X_train_scaled, y_train)
+            model.fit(X_train_model, y_train)
 
             # Predictions
-            y_pred_train = model.predict(X_train_scaled)
-            y_pred_test = model.predict(X_test_scaled)
+            y_pred_train = model.predict(X_train_model)
+            y_pred_test = model.predict(X_test_model)
 
             # Metrics
             r2_train = r2_score(y_train, y_pred_train)
@@ -152,7 +169,7 @@ def build_ml_models(csv_file: str, output_dir: str = None, verbose: bool = True)
 
             # Cross-validation
             cv_scores = cross_val_score(
-                model, X_train_scaled, y_train, cv=5, scoring="r2", n_jobs=-1
+                model, X_train_model, y_train, cv=5, scoring="r2", n_jobs=-1
             )
 
             results[target_name][model_name] = {
@@ -177,15 +194,24 @@ def build_ml_models(csv_file: str, output_dir: str = None, verbose: bool = True)
                     f"  CV R² (mean):   {cv_scores.mean():.4f} ± {cv_scores.std():.4f}"
                 )
 
-                # Display Linear Regression equation
-                if model_name == "Linear Regression":
-                    print(f"\n  Linear Regression Equation:")
+                # Display Polynomial Regression equation
+                if "Polynomial" in model_name:
+                    print(f"\n  Polynomial Regression Equation (degree=2):")
                     print(f"  {target_name} = {model.intercept_:.4f}")
-                    for i, param in enumerate(params):
-                        coef = model.coef_[i]
+                    # Show top 10 most important terms by coefficient magnitude
+                    coef_importance = [
+                        (poly_feature_names[i], model.coef_[i])
+                        for i in range(len(model.coef_))
+                    ]
+                    coef_importance.sort(key=lambda x: abs(x[1]), reverse=True)
+                    print(f"\n  Top 10 terms by importance:")
+                    for i, (feature, coef) in enumerate(coef_importance[:10]):
                         sign = "+" if coef >= 0 else ""
-                        print(f"              {sign} {coef:.4f} * {param}_scaled")
-                    print(f"\n  Note: Features are standardized (scaled)")
+                        print(f"    {i+1}. {sign} {coef:.6f} * {feature}")
+                    print(
+                        f"\n  Total terms: {len(poly_feature_names)} (including all squared terms and interactions)"
+                    )
+                    print(f"  Note: Features are standardized (scaled)")
 
     # Save results and plots
     if output_dir:
@@ -348,12 +374,14 @@ def _save_feature_importance(results, params, output_dir):
 
 
 def _save_regression_equations(results, params, scaler, output_dir):
-    """Save linear regression equations to text file."""
+    """Save polynomial regression equations to text file."""
     output_file = os.path.join(output_dir, "regression_equations.txt")
+
+    poly_feature_names = results.get("poly_feature_names", [])
 
     with open(output_file, "w") as f:
         f.write("=" * 80 + "\n")
-        f.write("LINEAR REGRESSION EQUATIONS\n")
+        f.write("POLYNOMIAL REGRESSION EQUATIONS (DEGREE=2 WITH INTERACTIONS)\n")
         f.write("=" * 80 + "\n\n")
         f.write("Note: These equations use STANDARDIZED (scaled) features.\n")
         f.write(f"Scaling parameters - Mean and Std Dev for each feature:\n\n")
@@ -368,36 +396,65 @@ def _save_regression_equations(results, params, scaler, output_dir):
 
         # Write equations for each target
         for target in ["Oil_at_1HCPV", "Oil_at_2HCPV"]:
-            if "Linear Regression" in results[target]:
-                model = results[target]["Linear Regression"]["model"]
-                r2 = results[target]["Linear Regression"]["r2_test"]
+            poly_model_key = None
+            for key in results[target].keys():
+                if "Polynomial" in key:
+                    poly_model_key = key
+                    break
+
+            if poly_model_key:
+                model = results[target][poly_model_key]["model"]
+                r2 = results[target][poly_model_key]["r2_test"]
 
                 f.write(f"Target: {target}\n")
                 f.write("-" * 80 + "\n\n")
                 f.write(f"R² Score (test): {r2:.4f}\n\n")
-                f.write("Equation (scaled features):\n")
+                f.write("Polynomial Equation (degree=2 with interactions):\n")
                 f.write(f"  {target} = {model.intercept_:.6f}\n")
 
-                for i, param in enumerate(params):
-                    coef = model.coef_[i]
+                # Sort coefficients by magnitude to show most important terms first
+                coef_importance = [
+                    (poly_feature_names[i], model.coef_[i])
+                    for i in range(len(model.coef_))
+                ]
+                coef_importance.sort(key=lambda x: abs(x[1]), reverse=True)
+
+                f.write("\n  All terms (sorted by importance):\n")
+                for i, (feature, coef) in enumerate(coef_importance):
                     sign = "+" if coef >= 0 else ""
-                    f.write(f"             {sign} {coef:.6f} * {param}_scaled\n")
+                    f.write(f"    {sign} {coef:.8f} * {feature}\n")
+
+                f.write(f"\n\n  Total terms: {len(poly_feature_names)}\n")
+                f.write("  Including:\n")
+                f.write("  - Linear terms (5): DPCOEF, POROS, MMP, SOINIT, XKVH\n")
+                f.write(
+                    "  - Squared terms (5): DPCOEF², POROS², MMP², SOINIT², XKVH²\n"
+                )
+                f.write("  - Interaction terms (10): All pairwise products\n")
 
                 f.write("\n\nTo use this equation:\n")
                 f.write("1. Standardize input parameters:\n")
-                f.write(f"   {param}_scaled = ({param} - mean) / std\n")
-                f.write("2. Apply the equation above with scaled values\n")
-                f.write("3. Result is the predicted oil recovery in %OOIP\n")
+                f.write(f"   parameter_scaled = (parameter - mean) / std\n")
+                f.write(
+                    "2. Create polynomial features (squared terms and interactions)\n"
+                )
+                f.write("3. Apply the equation above with all terms\n")
+                f.write("4. Result is the predicted oil recovery in %OOIP\n")
                 f.write("\n" + "=" * 80 + "\n\n")
 
         f.write("\nExample calculation:\n")
         f.write("-" * 80 + "\n")
         f.write(
-            "If you have: DPCOEF=0.85, POROS=0.10, MMP=1350, SOINIT=0.50, SWINIT=0.50, XKVH=0.05\n\n"
+            "If you have: DPCOEF=0.85, POROS=0.10, MMP=1350, SOINIT=0.50, XKVH=0.05\n\n"
         )
         f.write("1. Standardize each parameter using the mean and std above\n")
-        f.write("2. Plug scaled values into the equation\n")
-        f.write("3. The result is the predicted oil recovery\n\n")
+        f.write("2. Create polynomial features:\n")
+        f.write("   - Squared: DPCOEF_scaled², POROS_scaled², etc.\n")
+        f.write(
+            "   - Interactions: DPCOEF_scaled * POROS_scaled, DPCOEF_scaled * MMP_scaled, etc.\n"
+        )
+        f.write("3. Plug all terms into the equation\n")
+        f.write("4. The result is the predicted oil recovery\n\n")
 
     print(f"✓ Saved regression equations to {output_dir}/regression_equations.txt")
 
