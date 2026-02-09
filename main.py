@@ -521,13 +521,13 @@ def run_tasks(tasks_config):
                 )
             else:
                 # Run correlation analysis
-                print("\nStep 1: Analyzing correlations...")
+                print("\nAnalyzing correlations...")
                 correlations = analyze_correlations(
                     merged_csv, results_dir, verbose=True
                 )
 
                 # Build ML models
-                print("\nStep 2: Building predictive models...")
+                print("\nBuilding polynomial regression model...")
                 models = build_ml_models(merged_csv, results_dir, verbose=True)
 
                 print("✓ Machine learning analysis completed successfully\n")

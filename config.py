@@ -71,7 +71,7 @@ PARAMETER_GENERATOR_CONFIG = {
     "use_lhs": True,  # Use Latin Hypercube Sampling for better parameter space coverage
     "dpcoef_range": (0.7, 0.95),
     "poros_range": (0.08, 0.13),
-    "mmp_range": (1200, 1500),
+    "mmp_range": (1200, 2200),
     "soinit_range": (0.4, 0.6),
     "xkvh_range": (0.01, 0.1),
     "distributions": {

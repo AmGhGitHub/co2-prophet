@@ -30,7 +30,7 @@ class ParameterGenerator:
         n_runs: int,
         dpcoef_range=(0.7, 0.95),
         poros_range=(0.08, 0.13),
-        mmp_range=(1200, 1500),
+        mmp_range=(1200, 2200),
         soinit_range=(0.4, 0.6),
         xkvh_range=(0.01, 0.1),
         distributions=None,
@@ -357,7 +357,7 @@ def generate_sensitivity_csv(
     ranges = {
         "dpcoef_range": (0.7, 1.0),
         "poros_range": (0.15, 0.35),
-        "mmp_range": (1200, 1500),
+        "mmp_range": (1200, 2200),
         "soinit_range": (0.4, 0.6),
         "xkvh_range": (0.01, 0.1),
     }
