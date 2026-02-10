@@ -20,7 +20,7 @@ from config import (
     print_task_info,
 )
 from input_generator import process_csv_and_generate_input_files
-from output_converter import convert_output_to_csv
+from output_to_csv_converter import convert_output_to_csv
 from param_generator import generate_sensitivity_csv
 from plotter import plot_oil_vs_injected
 from results_analyzer import (
