@@ -69,7 +69,7 @@ PARAMETER_GENERATOR_CONFIG = {
     "sensitivity_level": "medium",  # 'minimum', 'low', 'medium', 'high', 'very_high'
     "seed": 42,  # Random seed (set to None for different data each run)
     "use_lhs": True,  # Use Latin Hypercube Sampling for better parameter space coverage
-    "dpcoef_range": (0.7, 0.95),
+    "dpcoef_range": (0.3, 0.99),
     "poros_range": (0.08, 0.13),
     "mmp_range": (1200, 2200),
     "soinit_range": (0.4, 0.6),

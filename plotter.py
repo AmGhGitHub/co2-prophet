@@ -47,11 +47,15 @@ def plot_oil_vs_injected(
             df["Injected total"], df["Oil produced"] * 100, linewidth=1.5, alpha=0.8
         )
 
-    plt.xlabel("Inj. CO2, HCPV", fontsize=14)
-    plt.ylabel("Incremental Oil R.F, %OOIP", fontsize=14)
+    plt.xlabel("Inj. CO2, HCPV", fontsize=18, fontweight="bold")
+    plt.ylabel("Incremental Oil R.F, %OOIP", fontsize=18, fontweight="bold")
     plt.title(
-        "Oil Produced vs Injected Total - All Cases", fontsize=16, fontweight="bold"
+        "Oil Produced vs Injected Total - All Cases", fontsize=20, fontweight="bold"
     )
+
+    # Increase tick label font sizes
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
 
     # Set axis limits to start at origin (0,0) with no gaps
     plt.xlim(left=0)
