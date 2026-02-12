@@ -74,3 +74,21 @@ def plot_oil_vs_injected(
         plt.close()
     else:
         plt.show()
+
+
+if __name__ == "__main__":
+    # Hard-coded paths
+    csv_dir = r"C:\vDos\Prophet\sen-output-csv"
+    results_dir = r"d:\temp\co2-prophet\results\img-results"
+
+    # Create results directory if it doesn't exist
+    os.makedirs(results_dir, exist_ok=True)
+
+    # Output plot path
+    output_plot = os.path.join(results_dir, "oil_vs_injected.png")
+
+    # Generate plot
+    print("Generating Oil vs Injected plot...")
+    plot_oil_vs_injected(csv_dir, output_plot)
+
+    print(f"\nComplete! Plot saved to {output_plot}")

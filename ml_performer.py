@@ -13,6 +13,11 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.preprocessing import MinMaxScaler, PolynomialFeatures
 
+OIL_RECOVERY_FACTORS = [
+    "oil_recovery_at_1hcpv",
+    "oil_recovery_at_2hcpv",
+]
+
 
 def analyze_correlations(csv_file: str, output_dir: str = None, verbose: bool = True):
     """
@@ -30,7 +35,7 @@ def analyze_correlations(csv_file: str, output_dir: str = None, verbose: bool = 
     df = pd.read_csv(csv_file)
 
     # Remove rows with missing results
-    df_complete = df.dropna(subset=["Oil_at_1HCPV", "Oil_at_2HCPV"])
+    df_complete = df.dropna(subset=["oil_recovery_at_1hcpv", "oil_recovery_at_2hcpv"])
 
     if verbose:
         print("\n" + "=" * 70)
@@ -42,7 +47,7 @@ def analyze_correlations(csv_file: str, output_dir: str = None, verbose: bool = 
 
     # Parameters to analyze (excluding SWINIT since SWINIT = 1.0 - SOINIT)
     params = ["DPCOEF", "POROS", "MMP", "SOINIT", "XKVH"]
-    targets = ["Oil_at_1HCPV", "Oil_at_2HCPV"]
+    targets = ["oil_recovery_at_1hcpv", "oil_recovery_at_2hcpv"]
 
     # Calculate correlations
     correlations = {}
@@ -81,13 +86,13 @@ def build_ml_models(csv_file: str, output_dir: str = None, verbose: bool = True)
     """
     # Read data
     df = pd.read_csv(csv_file)
-    df_complete = df.dropna(subset=["Oil_at_1HCPV", "Oil_at_2HCPV"])
+    df_complete = df.dropna(subset=["oil_recovery_at_1hcpv", "oil_recovery_at_2hcpv"])
 
     # Prepare features and targets (excluding SWINIT since SWINIT = 1.0 - SOINIT)
     params = ["DPCOEF", "POROS", "MMP", "SOINIT", "XKVH"]
     X = df_complete[params].values
-    y_1hcpv = df_complete["Oil_at_1HCPV"].values
-    y_2hcpv = df_complete["Oil_at_2HCPV"].values
+    y_1hcpv = df_complete["oil_recovery_at_1hcpv"].values
+    y_2hcpv = df_complete["oil_recovery_at_2hcpv"].values
 
     # Split data
     test_size = 0.2
@@ -124,8 +129,8 @@ def build_ml_models(csv_file: str, output_dir: str = None, verbose: bool = True)
     results["poly_feature_names"] = poly_feature_names
 
     for target_name, y_train, y_test in [
-        ("Oil_at_1HCPV", y1_train, y1_test),
-        ("Oil_at_2HCPV", y2_train, y2_test),
+        (OIL_RECOVERY_FACTORS[0], y1_train, y1_test),
+        (OIL_RECOVERY_FACTORS[1], y2_train, y2_test),
     ]:
         if verbose:
             print(f"\n{'=' * 70}")
@@ -155,10 +160,22 @@ def build_ml_models(csv_file: str, output_dir: str = None, verbose: bool = True)
         rmse_test = np.sqrt(mean_squared_error(y_test, y_pred_test))
         mae_test = mean_absolute_error(y_test, y_pred_test)
 
-        # Cross-validation
-        cv_scores = cross_val_score(
-            model, X_train_model, y_train, cv=5, scoring="r2", n_jobs=-1
-        )
+        # Cross-validation (use min of 5 or number of training samples)
+        n_splits = min(5, len(X_train_model))
+        if n_splits < 2:
+            # Not enough samples for cross-validation
+            cv_scores_mean = r2_train
+            cv_scores_std = 0.0
+            if verbose:
+                print(
+                    f"  Warning: Too few samples ({len(X_train_model)}) for cross-validation, using R² (train) instead"
+                )
+        else:
+            cv_scores = cross_val_score(
+                model, X_train_model, y_train, cv=n_splits, scoring="r2", n_jobs=-1
+            )
+            cv_scores_mean = cv_scores.mean()
+            cv_scores_std = cv_scores.std()
 
         results[target_name][model_name] = {
             "model": model,
@@ -166,8 +183,8 @@ def build_ml_models(csv_file: str, output_dir: str = None, verbose: bool = True)
             "r2_test": r2_test,
             "rmse_test": rmse_test,
             "mae_test": mae_test,
-            "cv_mean": cv_scores.mean(),
-            "cv_std": cv_scores.std(),
+            "cv_mean": cv_scores_mean,
+            "cv_std": cv_scores_std,
             "predictions_test": y_pred_test,
             "actual_test": y_test,
         }
@@ -178,7 +195,7 @@ def build_ml_models(csv_file: str, output_dir: str = None, verbose: bool = True)
             print(f"  R² (test):      {r2_test:.4f}")
             print(f"  RMSE (test):    {rmse_test:.4f}")
             print(f"  MAE (test):     {mae_test:.4f}")
-            print(f"  CV R² (mean):   {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
+            print(f"  CV R² (mean):   {cv_scores_mean:.4f} ± {cv_scores_std:.4f}")
 
             print(f"\n  Polynomial Regression Equation (degree=2):")
             print(f"  {target_name} = {model.intercept_:.4f}")
@@ -254,7 +271,7 @@ def _plot_correlation_heatmap(df, params, targets, output_dir):
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, "correlation_heatmap.png"), dpi=300)
     plt.close()
-    print(f"✓ Saved correlation heatmap to {output_dir}/correlation_heatmap.png")
+    print(f"Saved correlation heatmap to {output_dir}/correlation_heatmap.png")
 
 
 def _plot_parameter_importance(correlations, output_dir):
@@ -262,8 +279,8 @@ def _plot_parameter_importance(correlations, output_dir):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
     # Oil at 1 HCPV
-    params_1 = list(correlations["Oil_at_1HCPV"].keys())
-    values_1 = list(correlations["Oil_at_1HCPV"].values())
+    params_1 = list(correlations[OIL_RECOVERY_FACTORS[0]].keys())
+    values_1 = list(correlations[OIL_RECOVERY_FACTORS[0]].values())
     colors_1 = ["green" if v > 0 else "red" for v in values_1]
 
     ax1.barh(params_1, values_1, color=colors_1, alpha=0.7)
@@ -273,8 +290,8 @@ def _plot_parameter_importance(correlations, output_dir):
     ax1.grid(axis="x", alpha=0.3)
 
     # Oil at 2 HCPV
-    params_2 = list(correlations["Oil_at_2HCPV"].keys())
-    values_2 = list(correlations["Oil_at_2HCPV"].values())
+    params_2 = list(correlations[OIL_RECOVERY_FACTORS[1]].keys())
+    values_2 = list(correlations[OIL_RECOVERY_FACTORS[1]].values())
     colors_2 = ["green" if v > 0 else "red" for v in values_2]
 
     ax2.barh(params_2, values_2, color=colors_2, alpha=0.7)
@@ -286,12 +303,12 @@ def _plot_parameter_importance(correlations, output_dir):
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, "parameter_correlations.png"), dpi=300)
     plt.close()
-    print(f"✓ Saved parameter correlations to {output_dir}/parameter_correlations.png")
+    print(f"Saved parameter correlations to {output_dir}/parameter_correlations.png")
 
 
 def _save_model_plots(results, params, output_dir):
     """Save prediction vs actual plot for polynomial regression."""
-    for target in ["Oil_at_1HCPV", "Oil_at_2HCPV"]:
+    for target in ["oil_recovery_at_1hcpv", "oil_recovery_at_2hcpv"]:
         # Get model data
         model_data = results[target]["Polynomial Regression (degree=2)"]
         y_test = model_data["actual_test"]
@@ -329,7 +346,7 @@ def _save_model_plots(results, params, output_dir):
         filename = f"model_predictions_{target}.png"
         plt.savefig(os.path.join(output_dir, filename), dpi=300)
         plt.close()
-        print(f"✓ Saved model predictions to {output_dir}/{filename}")
+        print(f"Saved model predictions to {output_dir}/{filename}")
 
 
 def _save_regression_equations(results, params, scaler, output_dir):
@@ -356,7 +373,7 @@ def _save_regression_equations(results, params, scaler, output_dir):
         f.write("\n" + "=" * 80 + "\n\n")
 
         # Write equations for each target
-        for target in ["Oil_at_1HCPV", "Oil_at_2HCPV"]:
+        for target in ["oil_recovery_at_1hcpv", "oil_recovery_at_2hcpv"]:
             poly_model_key = None
             for key in results[target].keys():
                 if "Polynomial" in key:
@@ -423,187 +440,27 @@ def _save_regression_equations(results, params, scaler, output_dir):
             "\nNote: MinMaxScaler is easier to work with since all scaled values are in [0, 1] range.\n\n"
         )
 
-    print(f"✓ Saved regression equations to {output_dir}/regression_equations.txt")
-
-
-def compare_scalers(csv_file: str, verbose: bool = True):
-    """
-    Compare StandardScaler vs MinMaxScaler performance.
-
-    Args:
-        csv_file: Path to merged CSV file with parameters and results
-        verbose: If True, print comparison results
-
-    Returns:
-        Dictionary with comparison results
-    """
-    # Read data
-    df = pd.read_csv(csv_file)
-    df_complete = df.dropna(subset=["Oil_at_1HCPV", "Oil_at_2HCPV"])
-
-    # Prepare features and targets
-    params = ["DPCOEF", "POROS", "MMP", "SOINIT", "XKVH"]
-    X = df_complete[params].values
-    y_1hcpv = df_complete["Oil_at_1HCPV"].values
-    y_2hcpv = df_complete["Oil_at_2HCPV"].values
-
-    # Split data
-    X_train, X_test, y1_train, y1_test = train_test_split(
-        X, y_1hcpv, test_size=0.2, random_state=42
-    )
-    _, _, y2_train, y2_test = train_test_split(
-        X, y_2hcpv, test_size=0.2, random_state=42
-    )
-
-    if verbose:
-        print("\n" + "=" * 80)
-        print("SCALER COMPARISON: StandardScaler vs MinMaxScaler")
-        print("=" * 80)
-        print(f"\nDataset: {len(X_train)} training, {len(X_test)} test samples")
-        print(f"Features: {', '.join(params)}")
-        print("\nTesting Polynomial Regression (degree=2) with both scalers...\n")
-
-    results = {}
-
-    # Test both scalers
-    scalers = {"StandardScaler": StandardScaler(), "MinMaxScaler": MinMaxScaler()}
-
-    for scaler_name, scaler in scalers.items():
-        # Scale features
-        X_train_scaled = scaler.fit_transform(X_train)
-        X_test_scaled = scaler.transform(X_test)
-
-        # Create polynomial features
-        poly = PolynomialFeatures(degree=2, include_bias=False)
-        X_train_poly = poly.fit_transform(X_train_scaled)
-        X_test_poly = poly.transform(X_test_scaled)
-
-        results[scaler_name] = {}
-
-        # Test on both targets
-        for target_name, y_train, y_test in [
-            ("Oil_at_1HCPV", y1_train, y1_test),
-            ("Oil_at_2HCPV", y2_train, y2_test),
-        ]:
-            # Train model
-            model = LinearRegression()
-            model.fit(X_train_poly, y_train)
-
-            # Predictions
-            y_pred_train = model.predict(X_train_poly)
-            y_pred_test = model.predict(X_test_poly)
-
-            # Metrics
-            r2_train = r2_score(y_train, y_pred_train)
-            r2_test = r2_score(y_test, y_pred_test)
-            rmse_test = np.sqrt(mean_squared_error(y_test, y_pred_test))
-            mae_test = mean_absolute_error(y_test, y_pred_test)
-
-            # Cross-validation
-            cv_scores = cross_val_score(
-                model, X_train_poly, y_train, cv=5, scoring="r2", n_jobs=-1
-            )
-
-            results[scaler_name][target_name] = {
-                "r2_train": r2_train,
-                "r2_test": r2_test,
-                "rmse_test": rmse_test,
-                "mae_test": mae_test,
-                "cv_mean": cv_scores.mean(),
-                "cv_std": cv_scores.std(),
-            }
-
-        if verbose:
-            print(f"{scaler_name}:")
-            print("  " + "-" * 76)
-            for target in ["Oil_at_1HCPV", "Oil_at_2HCPV"]:
-                metrics = results[scaler_name][target]
-                print(f"  {target}:")
-                print(f"    R² (train):     {metrics['r2_train']:.4f}")
-                print(f"    R² (test):      {metrics['r2_test']:.4f}")
-                print(f"    RMSE (test):    {metrics['rmse_test']:.4f}")
-                print(f"    MAE (test):     {metrics['mae_test']:.4f}")
-                print(
-                    f"    CV R² (mean):   {metrics['cv_mean']:.4f} ± {metrics['cv_std']:.4f}"
-                )
-            print()
-
-    # Calculate differences
-    if verbose:
-        print("=" * 80)
-        print("PERFORMANCE DIFFERENCE (StandardScaler - MinMaxScaler):")
-        print("=" * 80)
-        for target in ["Oil_at_1HCPV", "Oil_at_2HCPV"]:
-            std_metrics = results["StandardScaler"][target]
-            mm_metrics = results["MinMaxScaler"][target]
-
-            r2_diff = std_metrics["r2_test"] - mm_metrics["r2_test"]
-            rmse_diff = std_metrics["rmse_test"] - mm_metrics["rmse_test"]
-
-            print(f"\n{target}:")
-            print(
-                f"  R² difference:    {r2_diff:+.4f}  {'(StandardScaler better)' if r2_diff > 0 else '(MinMaxScaler better)' if r2_diff < 0 else '(Same)'}"
-            )
-            print(
-                f"  RMSE difference:  {rmse_diff:+.4f}  {'(StandardScaler better)' if rmse_diff < 0 else '(MinMaxScaler better)' if rmse_diff > 0 else '(Same)'}"
-            )
-
-        print("\n" + "=" * 80)
-        print("RECOMMENDATION:")
-        print("=" * 80)
-
-        # Average R² across both targets
-        std_avg_r2 = np.mean(
-            [
-                results["StandardScaler"][t]["r2_test"]
-                for t in ["Oil_at_1HCPV", "Oil_at_2HCPV"]
-            ]
-        )
-        mm_avg_r2 = np.mean(
-            [
-                results["MinMaxScaler"][t]["r2_test"]
-                for t in ["Oil_at_1HCPV", "Oil_at_2HCPV"]
-            ]
-        )
-
-        if abs(std_avg_r2 - mm_avg_r2) < 0.001:
-            print("Performance is virtually identical (< 0.001 R² difference).")
-            print(
-                "StandardScaler is recommended for better interpretability with polynomial features."
-            )
-        elif std_avg_r2 > mm_avg_r2:
-            print(
-                f"StandardScaler performs better (Avg R²: {std_avg_r2:.4f} vs {mm_avg_r2:.4f})."
-            )
-            print("Recommendation: Keep StandardScaler (current implementation).")
-        else:
-            print(
-                f"MinMaxScaler performs better (Avg R²: {mm_avg_r2:.4f} vs {std_avg_r2:.4f})."
-            )
-            print("Recommendation: Consider switching to MinMaxScaler.")
-        print()
-
-    return results
+    print(f"Saved regression equations to {output_dir}/regression_equations.txt")
 
 
 if __name__ == "__main__":
-    # Example usage
-    csv_file = "results/sen_fbv_with_results.csv"
-    output_dir = "results"
+    # Hard-coded paths
+    csv_file = r"d:\temp\co2-prophet\results\csv-results\sen_fbv_with_results.csv"
+    results_dir = r"d:\temp\co2-prophet\results\ml-results"
 
-    # Compare scalers first
-    print("\n" + "#" * 80)
-    print("# SCALER COMPARISON TEST")
-    print("#" * 80)
-    comparison = compare_scalers(csv_file, verbose=True)
+    # Create results directory if it doesn't exist
+    os.makedirs(results_dir, exist_ok=True)
 
-    # Then run full analysis with StandardScaler
-    print("\n" + "#" * 80)
-    print("# FULL ANALYSIS WITH STANDARDSCALER")
-    print("#" * 80)
+    print("Starting ML analysis...")
+    print(f"Input file: {csv_file}")
+    print(f"Output directory: {results_dir}\n")
 
     # Analyze correlations
-    correlations = analyze_correlations(csv_file, output_dir)
+    print("Step 1: Analyzing correlations...")
+    correlations = analyze_correlations(csv_file, results_dir)
 
     # Build ML models
-    models = build_ml_models(csv_file, output_dir)
+    print("\nStep 2: Building ML models...")
+    models = build_ml_models(csv_file, results_dir)
+
+    print(f"\nComplete! All results saved to {results_dir}")
