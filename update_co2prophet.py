@@ -623,10 +623,16 @@ if __name__ == "__main__":
         "--message",
         "-m",
         type=str,
+        nargs="*",
         default=None,
         help=f"Custom git commit message (default: '{DEFAULT_COMMIT_MESSAGE}')",
     )
 
     args = parser.parse_args()
 
-    main(push_to_git=args.push, commit_message=args.message)
+    # Join message parts if provided
+    commit_msg = None
+    if args.message:
+        commit_msg = " ".join(args.message)
+
+    main(push_to_git=args.push, commit_message=commit_msg)
