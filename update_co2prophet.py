@@ -9,9 +9,14 @@ Usage:
     python update_coefficients.py
 """
 
+import argparse
 import os
 import re
+import subprocess
 from typing import Dict
+
+# Configuration
+DEFAULT_COMMIT_MESSAGE = "Update ML regression coefficients and equations"
 
 
 def parse_regression_file(filepath: str) -> Dict:
@@ -489,8 +494,66 @@ def update_typescript_file(filepath: str, new_content: str, data: Dict) -> None:
     print(f"  - Updated equation displays")
 
 
-def main():
-    """Main function to update coefficients."""
+def git_commit_and_push(repo_dir: str, commit_message: str) -> bool:
+    """
+    Commit and push changes to git repository.
+
+    Args:
+        repo_dir: Path to the git repository
+        commit_message: Commit message
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        # Change to repo directory
+        original_dir = os.getcwd()
+        os.chdir(repo_dir)
+
+        # Check if there are changes to commit
+        result = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        if not result.stdout.strip():
+            print("No changes to commit.")
+            os.chdir(original_dir)
+            return True
+
+        # Git add, commit, push
+        commands = [
+            ["git", "add", "."],
+            ["git", "commit", "-m", commit_message],
+            ["git", "push", "origin", "main"],
+        ]
+
+        for cmd in commands:
+            subprocess.run(cmd, check=True)
+
+        print("Git push successful!")
+        os.chdir(original_dir)
+        return True
+
+    except subprocess.CalledProcessError as e:
+        print(f"Git operation failed: {e}")
+        os.chdir(original_dir)
+        return False
+    except Exception as e:
+        print(f"Error during git operations: {e}")
+        return False
+
+
+def main(push_to_git: bool = False, commit_message: str = None):
+    """
+    Main function to update coefficients.
+
+    Args:
+        push_to_git: If True, commit and push changes to git. Default is False.
+        commit_message: Custom git commit message. Uses DEFAULT_COMMIT_MESSAGE if None.
+    """
     # File paths
     regression_file = r"d:\temp\co2-prophet\results\ml-results\regression_equations.txt"
     python_file = (
@@ -499,6 +562,7 @@ def main():
     typescript_file = (
         r"d:\CodingProjects\NextCO2Abacus\app\oil-recovery-factor-estimator\page.tsx"
     )
+    repo_dir = r"d:\CodingProjects\NextCO2Abacus"
 
     # Check if regression file exists
     if not os.path.exists(regression_file):
@@ -538,6 +602,31 @@ def main():
             f"  - {target_name}: R² = {target_data['r2_score']:.4f}, {len(target_data['terms'])} terms"
         )
 
+    # Git commit and push (only if enabled)
+    if push_to_git:
+        print("\n" + "=" * 60)
+        print("Committing and pushing changes to git...")
+        msg = commit_message if commit_message else DEFAULT_COMMIT_MESSAGE
+        git_commit_and_push(repo_dir, msg)
+
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="Update ML regression coefficients in web app files"
+    )
+    parser.add_argument(
+        "--push",
+        action="store_true",
+        help="Commit and push changes to git after updating files",
+    )
+    parser.add_argument(
+        "--message",
+        "-m",
+        type=str,
+        default=None,
+        help=f"Custom git commit message (default: '{DEFAULT_COMMIT_MESSAGE}')",
+    )
+
+    args = parser.parse_args()
+
+    main(push_to_git=args.push, commit_message=args.message)

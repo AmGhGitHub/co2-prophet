@@ -125,7 +125,7 @@ def print_task_info():
     print("AVAILABLE TASKS")
     print("=" * 60)
     for task_name, description in AVAILABLE_TASKS.items():
-        status = "✓ ENABLED" if TASKS[task_name] else "✗ DISABLED"
+        status = "[OK] ENABLED" if TASKS[task_name] else "[X] DISABLED"
         print(f"{status:12} | {task_name:25} | {description}")
     print("=" * 60 + "\n")
 
