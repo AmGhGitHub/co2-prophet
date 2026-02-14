@@ -28,11 +28,12 @@ def parse_regression_file(filepath: str) -> Dict:
         - scaling_params: dict of min/max for each parameter
         - oil_recovery_at_1hcpv: dict with intercept and terms
         - oil_recovery_at_2hcpv: dict with intercept and terms
+        - tornado_data: dict with correlation data for tornado charts
     """
     with open(filepath, "r", encoding="utf-8") as f:
         content = f.read()
 
-    result = {"scaling_params": {}, "targets": {}}
+    result = {"scaling_params": {}, "targets": {}, "tornado_data": {}}
 
     # Extract scaling parameters
     scaling_section = re.search(
@@ -81,6 +82,28 @@ def parse_regression_file(filepath: str) -> Dict:
             "intercept": intercept,
             "terms": terms,
         }
+
+    # Extract tornado chart data (correlations with targets)
+    # Look for correlation data in the file
+    correlation_pattern = (
+        r"Correlations with ([\w_]+):\s*\n((?:\s+\w+\s+:\s+[-\d.]+\s+\([^)]+\)\s*\n)+)"
+    )
+
+    for match in re.finditer(correlation_pattern, content):
+        target_name = match.group(1)
+        corr_text = match.group(2)
+
+        correlations = {}
+        for line in corr_text.strip().split("\n"):
+            # Match: "  DPCOEF     : -0.5511  (Strong)" - note multiple spaces between param and colon
+            corr_match = re.match(r"(\w+)\s+:\s+([-\d.]+)\s+\([^)]+\)", line.strip())
+            if corr_match:
+                param_name = corr_match.group(1)
+                corr_value = float(corr_match.group(2))
+                correlations[param_name] = corr_value
+
+        if correlations:
+            result["tornado_data"][target_name] = correlations
 
     return result
 
@@ -155,9 +178,58 @@ def format_param_for_jsx(param: str) -> str:
     return param_map.get(param, param)
 
 
+def generate_typescript_tornado_data(tornado_data: Dict) -> str:
+    """
+    Generate TypeScript tornado chart data.
+
+    Args:
+        tornado_data: Dictionary with correlation data for each target
+
+    Returns:
+        TypeScript code for tornado chart data
+    """
+    lines = []
+    lines.append("// Tornado chart data (correlations)")
+    lines.append("const TORNADO_DATA = {")
+
+    for target_name, correlations in tornado_data.items():
+        if "1hcpv" in target_name:
+            key = "oil_1hcpv"
+        else:
+            key = "oil_2hcpv"
+
+        # Sort by absolute correlation value (descending)
+        sorted_params = sorted(
+            correlations.items(), key=lambda x: abs(x[1]), reverse=True
+        )
+
+        lines.append(f"  {key}: [")
+        for param, corr_value in sorted_params:
+            # Map parameter names to display labels (using Unicode subscripts where needed)
+            param_label_map = {
+                "DPCOEF": "Vᴅᴘ",  # V with DP in small caps (closest to subscript)
+                "POROS": "φ",
+                "MMP": "MMP",
+                "SOINIT": "Sₒᵢ",  # S with oi subscript
+                "XKVH": "Kᵥ/Kₕ",  # K with v and h subscripts
+            }
+            label = param_label_map.get(param, param)
+            color = "#2ab300" if corr_value > 0 else "#042ec7"
+
+            lines.append(
+                f'    {{ param: "{label}", correlation: {corr_value:.4f}, color: "{color}" }},'
+            )
+        lines.append("  ],")
+
+    lines.append("};")
+    lines.append("")
+
+    return "\n".join(lines)
+
+
 def generate_jsx_equation(target_name: str, target_data: Dict) -> str:
     """
-    Generate JSX equation display for TypeScript page.
+    Generate JSX equation display for TypeScript page with dynamic tornado chart.
 
     Args:
         target_name: Target name (oil_recovery_at_1hcpv or oil_recovery_at_2hcpv)
@@ -170,9 +242,11 @@ def generate_jsx_equation(target_name: str, target_data: Dict) -> str:
     if "1hcpv" in target_name:
         color = "blue-600"
         hcpv = "1.0"
+        tornado_key = "oil_1hcpv"
     else:
         color = "teal-600"
         hcpv = "2.0"
+        tornado_key = "oil_2hcpv"
 
     # Use actual R² score from data
     r2 = target_data["r2_score"]
@@ -182,14 +256,51 @@ def generate_jsx_equation(target_name: str, target_data: Dict) -> str:
     lines.append(
         f'                  <h3 className="font-semibold text-{color}">Oil Recovery @ {hcpv} HCPV</h3>'
     )
+    lines.append(f'                  <div className="flex gap-4 items-start">')
     lines.append(
-        f"                  <div className=\"bg-slate-50 p-4 rounded-md text-xs\" style={{{{fontFamily: 'Georgia, serif'}}}}>"
+        f'                    <div className="flex-shrink-0" style={{{{ width: "400px" }}}}>'
     )
-    lines.append(f'                    <div className="leading-relaxed">')
+
+    # Dynamic tornado chart instead of static image
+    lines.append(
+        f'                      <ResponsiveContainer width="100%" height={{300}}>'
+    )
+    lines.append(
+        f'                        <BarChart data={{TORNADO_DATA.{tornado_key}}} layout="vertical" margin={{{{ top: 5, right: 30, left: 80, bottom: 5 }}}}>'
+    )
+    lines.append(f'                          <CartesianGrid strokeDasharray="3 3" />')
+    lines.append(
+        f'                          <XAxis type="number" domain={{[-1, 1]}} ticks={{[-1, -0.5, 0, 0.5, 1]}} />'
+    )
+    lines.append(
+        f'                          <YAxis type="category" dataKey="param" width={{70}} style={{{{ fontSize: \'11px\' }}}} />'
+    )
+    lines.append(
+        f"                          <Tooltip formatter={{(value: number) => value.toFixed(3)}} />"
+    )
+    lines.append(
+        f'                          <Bar dataKey="correlation" fill="#8884d8">'
+    )
+    lines.append(
+        f"                            {{TORNADO_DATA.{tornado_key}.map((entry, index) => ("
+    )
+    lines.append(
+        f"                              <Cell key={{`cell-${{index}}`}} fill={{entry.color}} />"
+    )
+    lines.append(f"                            ))}}")
+    lines.append(f"                          </Bar>")
+    lines.append(f"                        </BarChart>")
+    lines.append(f"                      </ResponsiveContainer>")
+    lines.append(f"                    </div>")
+    lines.append(f'                    <div className="flex-1">')
+    lines.append(
+        f"                      <div className=\"bg-slate-50 p-4 rounded-md text-xs\" style={{{{fontFamily: 'Georgia, serif'}}}}>"
+    )
+    lines.append(f'                        <div className="leading-relaxed">')
 
     # First line: intercept and first few terms
     intercept = target_data["intercept"]
-    line_content = f'                      <span className="font-semibold">Recovery</span> = {intercept:.3f} '
+    line_content = f'                          <span className="font-semibold">Recovery</span> = {intercept:.3f} '
 
     # Group terms into lines (aim for ~3-4 terms per line for readability)
     terms = target_data["terms"]
@@ -202,7 +313,7 @@ def generate_jsx_equation(target_name: str, target_data: Dict) -> str:
         # Check if we should start a new line (every 3-4 terms)
         if term_count > 0 and term_count % 3 == 0:
             lines.append(current_line + "<br/>")
-            current_line = "                      " + formatted_term
+            current_line = "                          " + formatted_term
             term_count = 1
         else:
             if term_count == 0 and i == 0:
@@ -216,11 +327,13 @@ def generate_jsx_equation(target_name: str, target_data: Dict) -> str:
     if current_line.strip():
         lines.append(current_line)
 
+    lines.append(f"                        </div>")
+    lines.append(f"                      </div>")
+    lines.append(
+        f'                      <p className="text-xs text-slate-500 italic mt-2">R² = {r2:.4f} | 20 terms (5 linear + 5 squared + 10 interactions)</p>'
+    )
     lines.append(f"                    </div>")
     lines.append(f"                  </div>")
-    lines.append(
-        f'                  <p className="text-xs text-slate-500 italic">R² = {r2:.4f} | 20 terms (5 linear + 5 squared + 10 interactions)</p>'
-    )
     lines.append(f"                </div>")
 
     return "\n".join(lines)
@@ -267,7 +380,7 @@ def generate_python_coefficients(data: Dict) -> str:
 
 
 def generate_typescript_coefficients(data: Dict) -> str:
-    """Generate TypeScript code for coefficients."""
+    """Generate TypeScript code for coefficients and tornado data."""
     lines = []
 
     # Scaling parameters
@@ -309,6 +422,11 @@ def generate_typescript_coefficients(data: Dict) -> str:
         lines.append("  ],")
         lines.append("};")
         lines.append("")
+
+    # Add tornado data if available
+    if data.get("tornado_data"):
+        tornado_ts = generate_typescript_tornado_data(data["tornado_data"])
+        lines.append(tornado_ts)
 
     return "\n".join(lines)
 
@@ -465,16 +583,72 @@ def update_typescript_file(filepath: str, new_content: str, data: Dict) -> None:
         content,
     )
 
+    # Add or replace TORNADO_DATA if available (it will be in sections[3])
+    if len(sections) > 3 and data.get("tornado_data"):
+        # Check if TORNADO_DATA already exists
+        if "const TORNADO_DATA" in content:
+            content = replace_const_declaration(
+                r"// Tornado chart data \(correlations\)\s*\nconst TORNADO_DATA =",
+                sections[3].rstrip(),
+                content,
+            )
+        else:
+            # Insert after COEFFS_2HCPV using balanced brace matching
+            # Find position after COEFFS_2HCPV declaration
+            match = re.search(r"const COEFFS_2HCPV = ", content)
+            if match:
+                start_pos = match.start()
+                brace_pos = content.find("{", start_pos)
+
+                # Count braces to find the closing one
+                brace_count = 0
+                pos = brace_pos
+                while pos < len(content):
+                    if content[pos] == "{":
+                        brace_count += 1
+                    elif content[pos] == "}":
+                        brace_count -= 1
+                        if brace_count == 0:
+                            # Found matching closing brace, find semicolon
+                            semi_pos = content.find(";", pos)
+                            if semi_pos != -1:
+                                # Insert after the semicolon and newline
+                                insert_pos = semi_pos + 1
+                                # Skip any whitespace/newlines
+                                while (
+                                    insert_pos < len(content)
+                                    and content[insert_pos] in "\n \t"
+                                ):
+                                    insert_pos += 1
+
+                                # Insert TORNADO_DATA
+                                content = (
+                                    content[:insert_pos]
+                                    + "\n"
+                                    + sections[3]
+                                    + "\n\n"
+                                    + content[insert_pos:]
+                                )
+                            break
+                    pos += 1
+
+        # Ensure Cell is imported from recharts
+        if "Cell" not in content:
+            # Add Cell to the recharts imports - handle multiline import
+            content = re.sub(
+                r'(Line,)\s*\n(\} from "recharts";)', r"\1\n  Cell,\n\2", content
+            )
+
     # Generate and replace equation JSX displays
     # Find and replace equation for 1.0 HCPV
     equation_1hcpv = generate_jsx_equation(
         "oil_recovery_at_1hcpv", data["targets"]["oil_recovery_at_1hcpv"]
     )
 
-    # Pattern to match the entire equation div for 1.0 HCPV
-    pattern_1hcpv = r'<div className="space-y-2">\s*<h3 className="font-semibold text-blue-600">Oil Recovery @ 1\.0 HCPV</h3>.*?</div>\s*</div>\s*<p className="text-xs text-slate-500 italic">R² = [\d.]+ \| 20 terms.*?</p>\s*</div>'
+    # Pattern to match the entire equation div for 1.0 HCPV (updated for new structure with tornado chart)
+    pattern_1hcpv = r'<div className="space-y-2">\s*<h3 className="font-semibold text-blue-600">Oil Recovery @ 1\.0 HCPV</h3>.*?</div>\s*</div>\s*</div>'
 
-    content = re.sub(pattern_1hcpv, equation_1hcpv, content, flags=re.DOTALL)
+    content = re.sub(pattern_1hcpv, equation_1hcpv, content, flags=re.DOTALL, count=1)
 
     # Find and replace equation for 2.0 HCPV
     equation_2hcpv = generate_jsx_equation(
@@ -482,9 +656,9 @@ def update_typescript_file(filepath: str, new_content: str, data: Dict) -> None:
     )
 
     # Pattern to match the entire equation div for 2.0 HCPV
-    pattern_2hcpv = r'<div className="space-y-2">\s*<h3 className="font-semibold text-teal-600">Oil Recovery @ 2\.0 HCPV</h3>.*?</div>\s*</div>\s*<p className="text-xs text-slate-500 italic">R² = [\d.]+ \| 20 terms.*?</p>\s*</div>'
+    pattern_2hcpv = r'<div className="space-y-2">\s*<h3 className="font-semibold text-teal-600">Oil Recovery @ 2\.0 HCPV</h3>.*?</div>\s*</div>\s*</div>'
 
-    content = re.sub(pattern_2hcpv, equation_2hcpv, content, flags=re.DOTALL)
+    content = re.sub(pattern_2hcpv, equation_2hcpv, content, flags=re.DOTALL, count=1)
 
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)

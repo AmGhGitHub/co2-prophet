@@ -68,11 +68,17 @@ def analyze_correlations(csv_file: str, output_dir: str = None, verbose: bool = 
         os.makedirs(output_dir, exist_ok=True)
         _plot_correlation_heatmap(df_complete, params, targets, output_dir)
         _plot_parameter_importance(correlations, output_dir)
+        _plot_tornado_charts(correlations, output_dir)
 
     return correlations
 
 
-def build_ml_models(csv_file: str, output_dir: str = None, verbose: bool = True):
+def build_ml_models(
+    csv_file: str,
+    output_dir: str = None,
+    verbose: bool = True,
+    correlations: dict = None,
+):
     """
     Build machine learning models to predict oil recovery.
 
@@ -80,6 +86,7 @@ def build_ml_models(csv_file: str, output_dir: str = None, verbose: bool = True)
         csv_file: Path to merged CSV file with parameters and results
         output_dir: Directory to save model results and plots
         verbose: If True, print model performance
+        correlations: Optional dictionary with correlation data from analyze_correlations
 
     Returns:
         Dictionary with trained models and performance metrics
@@ -217,7 +224,7 @@ def build_ml_models(csv_file: str, output_dir: str = None, verbose: bool = True)
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
         _save_model_plots(results, params, output_dir)
-        _save_regression_equations(results, params, scaler, output_dir)
+        _save_regression_equations(results, params, scaler, output_dir, correlations)
 
     # Save scaler for future predictions
     results["scaler"] = scaler
@@ -246,32 +253,170 @@ def _get_correlation_strength(corr_value):
 
 
 def _plot_correlation_heatmap(df, params, targets, output_dir):
-    """Create correlation heatmap."""
+    """Create correlation heatmap showing correlations between parameters and targets."""
     import matplotlib.pyplot as plt
     import seaborn as sns
 
-    # Calculate correlation matrix
-    corr_matrix = df[params + targets].corr()
+    # Calculate correlation matrix for parameters only
+    param_corr = df[params].corr()
 
-    plt.figure(figsize=(10, 8))
+    # Calculate correlations between parameters and targets
+    param_target_corr = df[params + targets].corr().loc[params, targets]
+
+    # Create figure with two subplots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+
+    # Left: Parameter correlations
     sns.heatmap(
-        corr_matrix,
+        param_corr,
         annot=True,
         fmt=".3f",
         cmap="coolwarm",
         center=0,
         square=True,
         linewidths=1,
+        ax=ax1,
+        cbar_kws={"label": "Correlation"},
     )
-    plt.title(
-        "Correlation Heatmap: Parameters and Oil Recovery",
-        fontsize=14,
+    ax1.set_title(
+        "Parameter Intercorrelations",
+        fontsize=12,
         fontweight="bold",
     )
+
+    # Right: Parameter-Target correlations
+    sns.heatmap(
+        param_target_corr,
+        annot=True,
+        fmt=".3f",
+        cmap="RdYlGn",
+        center=0,
+        linewidths=1,
+        ax=ax2,
+        cbar_kws={"label": "Correlation"},
+    )
+    ax2.set_title(
+        "Parameter-Target Correlations",
+        fontsize=12,
+        fontweight="bold",
+    )
+    ax2.set_yticklabels(ax2.get_yticklabels(), rotation=0)
+
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, "correlation_heatmap.png"), dpi=300)
     plt.close()
     print(f"Saved correlation heatmap to {output_dir}/correlation_heatmap.png")
+
+
+def _plot_tornado_charts(correlations, output_dir):
+    """Create tornado charts showing parameter sensitivity for each response."""
+
+    # Parameter label mapping
+    param_labels = {
+        "DPCOEF": r"$V_{DP}$",
+        "POROS": r"$\phi$",
+        "MMP": "MMP",
+        "SOINIT": r"$S_{oi}$",
+        "XKVH": r"$K_v/K_h$",
+    }
+
+    # Oil at 1 HCPV - Tornado chart
+    fig1, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+
+    params_1 = list(correlations[OIL_RECOVERY_FACTORS[0]].keys())
+    values_1 = list(correlations[OIL_RECOVERY_FACTORS[0]].values())
+
+    # Sort by absolute value for tornado effect
+    sorted_indices_1 = sorted(
+        range(len(values_1)), key=lambda i: abs(values_1[i]), reverse=True
+    )
+    sorted_params_1 = [param_labels[params_1[i]] for i in sorted_indices_1]
+    sorted_values_1 = [values_1[i] for i in sorted_indices_1]
+
+    colors_1 = ["#2ab300" if v > 0 else "#042ec7" for v in sorted_values_1]
+
+    y_pos_1 = range(len(sorted_params_1))
+    ax1.barh(
+        y_pos_1,
+        sorted_values_1,
+        color=colors_1,
+        alpha=0.8,
+        edgecolor="black",
+        linewidth=0.5,
+    )
+    ax1.set_yticks(y_pos_1)
+    ax1.set_yticklabels(sorted_params_1, fontsize=12)
+    ax1.set_xlabel("Correlation Coefficient", fontsize=12, fontweight="bold")
+    ax1.set_title(
+        "Oil Recovery @ 1.0 HCPV\nParameter Sensitivity", fontsize=13, fontweight="bold"
+    )
+    ax1.axvline(x=0, color="black", linestyle="-", linewidth=1.2)
+    ax1.grid(axis="x", alpha=0.3, linestyle="--")
+    ax1.set_xlim(-1, 1)
+
+    # Add value labels
+    for i, (param, val) in enumerate(zip(sorted_params_1, sorted_values_1)):
+        label_x = val + (0.05 if val > 0 else -0.05)
+        ha = "left" if val > 0 else "right"
+        ax1.text(
+            label_x, i, f"{val:.3f}", va="center", ha=ha, fontsize=10, fontweight="bold"
+        )
+
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(output_dir, "tornado_1hcpv.png"), dpi=300, bbox_inches="tight"
+    )
+    plt.close()
+    print(f"Saved tornado chart (1 HCPV) to {output_dir}/tornado_1hcpv.png")
+
+    # Oil at 2 HCPV - Tornado chart
+    fig2, ax2 = plt.subplots(1, 1, figsize=(8, 6))
+
+    params_2 = list(correlations[OIL_RECOVERY_FACTORS[1]].keys())
+    values_2 = list(correlations[OIL_RECOVERY_FACTORS[1]].values())
+
+    # Sort by absolute value for tornado effect
+    sorted_indices_2 = sorted(
+        range(len(values_2)), key=lambda i: abs(values_2[i]), reverse=True
+    )
+    sorted_params_2 = [param_labels[params_2[i]] for i in sorted_indices_2]
+    sorted_values_2 = [values_2[i] for i in sorted_indices_2]
+
+    colors_2 = ["#2ab300" if v > 0 else "#042ec7" for v in sorted_values_2]
+
+    y_pos_2 = range(len(sorted_params_2))
+    ax2.barh(
+        y_pos_2,
+        sorted_values_2,
+        color=colors_2,
+        alpha=0.8,
+        edgecolor="black",
+        linewidth=0.5,
+    )
+    ax2.set_yticks(y_pos_2)
+    ax2.set_yticklabels(sorted_params_2, fontsize=12)
+    ax2.set_xlabel("Correlation Coefficient", fontsize=12, fontweight="bold")
+    ax2.set_title(
+        "Oil Recovery @ 2.0 HCPV\nParameter Sensitivity", fontsize=13, fontweight="bold"
+    )
+    ax2.axvline(x=0, color="black", linestyle="-", linewidth=1.2)
+    ax2.grid(axis="x", alpha=0.3, linestyle="--")
+    ax2.set_xlim(-1, 1)
+
+    # Add value labels
+    for i, (param, val) in enumerate(zip(sorted_params_2, sorted_values_2)):
+        label_x = val + (0.05 if val > 0 else -0.05)
+        ha = "left" if val > 0 else "right"
+        ax2.text(
+            label_x, i, f"{val:.3f}", va="center", ha=ha, fontsize=10, fontweight="bold"
+        )
+
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(output_dir, "tornado_2hcpv.png"), dpi=300, bbox_inches="tight"
+    )
+    plt.close()
+    print(f"Saved tornado chart (2 HCPV) to {output_dir}/tornado_2hcpv.png")
 
 
 def _plot_parameter_importance(correlations, output_dir):
@@ -349,8 +494,8 @@ def _save_model_plots(results, params, output_dir):
         print(f"Saved model predictions to {output_dir}/{filename}")
 
 
-def _save_regression_equations(results, params, scaler, output_dir):
-    """Save polynomial regression equations to text file."""
+def _save_regression_equations(results, params, scaler, output_dir, correlations=None):
+    """Save polynomial regression equations and correlations to text file."""
     output_file = os.path.join(output_dir, "regression_equations.txt")
 
     poly_feature_names = results.get("poly_feature_names", [])
@@ -371,6 +516,19 @@ def _save_regression_equations(results, params, scaler, output_dir):
             )
 
         f.write("\n" + "=" * 80 + "\n\n")
+
+        # Write correlations if available
+        if correlations:
+            for target in ["oil_recovery_at_1hcpv", "oil_recovery_at_2hcpv"]:
+                if target in correlations:
+                    f.write(f"Correlations with {target}:\n")
+                    for param in params:
+                        corr_val = correlations[target].get(param, 0.0)
+                        strength = _get_correlation_strength(abs(corr_val))
+                        f.write(f"  {param:10} : {corr_val:7.4f}  ({strength})\n")
+                    f.write("\n")
+
+            f.write("=" * 80 + "\n\n")
 
         # Write equations for each target
         for target in ["oil_recovery_at_1hcpv", "oil_recovery_at_2hcpv"]:
@@ -459,8 +617,8 @@ if __name__ == "__main__":
     print("Step 1: Analyzing correlations...")
     correlations = analyze_correlations(csv_file, results_dir)
 
-    # Build ML models
+    # Build ML models (pass correlations to include in regression_equations.txt)
     print("\nStep 2: Building ML models...")
-    models = build_ml_models(csv_file, results_dir)
+    models = build_ml_models(csv_file, results_dir, correlations=correlations)
 
     print(f"\nComplete! All results saved to {results_dir}")
