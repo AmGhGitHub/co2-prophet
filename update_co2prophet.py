@@ -258,7 +258,7 @@ def generate_jsx_equation(target_name: str, target_data: Dict) -> str:
     )
     lines.append(f'                  <div className="flex gap-4 items-start">')
     lines.append(
-        f'                    <div className="flex-shrink-0" style={{{{ width: "400px" }}}}>'
+        f'                    <div className="flex-shrink-0" style={{{{ width: "550px" }}}}>'
     )
 
     # Dynamic tornado chart instead of static image
@@ -273,7 +273,7 @@ def generate_jsx_equation(target_name: str, target_data: Dict) -> str:
         f'                          <XAxis type="number" domain={{[-1, 1]}} ticks={{[-1, -0.5, 0, 0.5, 1]}} />'
     )
     lines.append(
-        f'                          <YAxis type="category" dataKey="param" width={{70}} style={{{{ fontSize: \'11px\' }}}} />'
+        f"                          <YAxis type=\"category\" dataKey=\"param\" width={{80}} style={{{{ fontSize: '14px', fontWeight: 'bold' }}}} />"
     )
     lines.append(
         f"                          <Tooltip formatter={{(value: number) => value.toFixed(3)}} />"
