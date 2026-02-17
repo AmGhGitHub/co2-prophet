@@ -18,14 +18,14 @@ def prompt_sensitivity_level():
     print("=" * 70 + "\n")
 
     sensitivity_options = {
-        1: ("minimum", "~7 runs", "Very sparse, quick testing only"),
-        2: ("low", "~12 runs", "Basic coverage, preliminary analysis"),
-        3: ("medium", "~60 runs", "Recommended for most cases"),
-        4: ("high", "~300 runs", "Detailed sensitivity analysis"),
-        5: ("very_high", "~600 runs", "Comprehensive analysis"),
+        1: ("minimum", "~14 runs", "Very sparse, quick testing only"),
+        2: ("low", "~26 runs", "Basic coverage, preliminary analysis"),
+        3: ("medium", "~130 runs", "Recommended for most cases"),
+        4: ("high", "~650 runs", "Detailed sensitivity analysis"),
+        5: ("very_high", "~1300 runs", "Comprehensive analysis"),
     }
 
-    print("Choose sensitivity level for parameter generation (5 parameters):\n")
+    print("Choose sensitivity level for parameter generation (13 parameters):\n")
     for key, (level, runs, desc) in sensitivity_options.items():
         marker = " [Recommended]" if level == "medium" else ""
         print(

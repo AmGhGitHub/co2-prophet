@@ -33,6 +33,14 @@ class ParameterGenerator:
         mmp_range=(1200, 2200),
         soinit_range=(0.4, 0.6),
         xkvh_range=(0.01, 0.1),
+        sorw_range=(0.2, 0.5),
+        sorg_range=(0.15, 0.35),
+        sorm_range=(0.03, 0.1),
+        sgr_range=(0.0, 0.1),
+        swc_range=(0.05, 0.15, 0.18),
+        kwro_range=(0.1, 0.5),
+        krsmax_range=(0.1, 0.6),
+        w_range=(0.2, 0.8),
         distributions=None,
         use_lhs=True,
     ) -> list:
@@ -46,6 +54,14 @@ class ParameterGenerator:
             mmp_range: (min, max) for minimum miscibility pressure (psi)
             soinit_range: (min, max) for initial oil saturation (fraction)
             xkvh_range: (min, max) for vertical to horizontal permeability ratio
+            sorw_range: (min, max) for residual oil saturation to water
+            sorg_range: (min, max) for residual oil saturation to gas
+            sorm_range: (min, max) for residual oil saturation to miscible
+            sgr_range: (min, max) for residual gas saturation (SSR will be set equal)
+            swc_range: (min, mode, max) for connate water saturation (SWIR will be set equal)
+            kwro_range: (min, max) for oil relative permeability at connate water
+            krsmax_range: (min, max) for maximum solvent relative permeability
+            w_range: (min, max) for exponent W
             distributions: Dictionary specifying distribution types for each parameter
                           Options: 'uniform', 'normal', 'triangular'
                           Example: {'DPCOEF': 'uniform', 'POROS': 'normal'}
@@ -61,16 +77,46 @@ class ParameterGenerator:
                 "MMP": "uniform",
                 "SOINIT": "uniform",
                 "XKVH": "uniform",
+                "SORW": "uniform",
+                "SORG": "uniform",
+                "SORM": "uniform",
+                "SGR": "uniform",
+                "SWC": "triangular",
+                "KWRO": "uniform",
+                "KRSMAX": "uniform",
+                "W": "uniform",
             }
 
         # Parameter names and ranges
-        param_names = ["DPCOEF", "POROS", "MMP", "SOINIT", "XKVH"]
+        param_names = [
+            "DPCOEF",
+            "POROS",
+            "MMP",
+            "SOINIT",
+            "XKVH",
+            "SORW",
+            "SORG",
+            "SORM",
+            "SGR",
+            "SWC",
+            "KWRO",
+            "KRSMAX",
+            "W",
+        ]
         param_ranges = [
             dpcoef_range,
             poros_range,
             mmp_range,
             soinit_range,
             xkvh_range,
+            sorw_range,
+            sorg_range,
+            sorm_range,
+            sgr_range,
+            swc_range,
+            kwro_range,
+            krsmax_range,
+            w_range,
         ]
 
         params_list = []
@@ -102,6 +148,13 @@ class ParameterGenerator:
 
                 # Calculate SWINIT as complement of SOINIT
                 params["SWINIT"] = 1.0 - params["SOINIT"]
+
+                # Set SSR equal to SGR
+                params["SSR"] = params["SGR"]
+
+                # Set SWIR equal to SWC
+                params["SWIR"] = params["SWC"]
+
                 params_list.append(params)
 
         else:
@@ -135,6 +188,41 @@ class ParameterGenerator:
                 # Generate XKVH
                 params["XKVH"] = self._generate_value(
                     "XKVH", xkvh_range, distributions.get("XKVH", "uniform")
+                )
+
+                # Generate relative permeability parameters
+                params["SORW"] = self._generate_value(
+                    "SORW", sorw_range, distributions.get("SORW", "uniform")
+                )
+
+                params["SORG"] = self._generate_value(
+                    "SORG", sorg_range, distributions.get("SORG", "uniform")
+                )
+
+                params["SORM"] = self._generate_value(
+                    "SORM", sorm_range, distributions.get("SORM", "uniform")
+                )
+
+                params["SGR"] = self._generate_value(
+                    "SGR", sgr_range, distributions.get("SGR", "uniform")
+                )
+                params["SSR"] = params["SGR"]  # SSR equals SGR
+
+                params["SWC"] = self._generate_value(
+                    "SWC", swc_range, distributions.get("SWC", "triangular")
+                )
+                params["SWIR"] = params["SWC"]  # SWIR equals SWC
+
+                params["KWRO"] = self._generate_value(
+                    "KWRO", kwro_range, distributions.get("KWRO", "uniform")
+                )
+
+                params["KRSMAX"] = self._generate_value(
+                    "KRSMAX", krsmax_range, distributions.get("KRSMAX", "uniform")
+                )
+
+                params["W"] = self._generate_value(
+                    "W", w_range, distributions.get("W", "uniform")
                 )
 
                 params_list.append(params)
@@ -202,7 +290,7 @@ class ParameterGenerator:
         Args:
             uniform_sample: LHS sample in [0, 1] range
             param_name: Name of the parameter
-            value_range: (min, max) tuple for the parameter
+            value_range: (min, max) tuple for the parameter, or (min, mode, max) for triangular
             distribution: Type of distribution to apply
 
         Returns:
@@ -210,7 +298,22 @@ class ParameterGenerator:
         """
         from scipy import stats
 
-        min_val, max_val = value_range
+        if distribution == "triangular":
+            # Handle triangular distribution with (min, mode, max)
+            if len(value_range) == 3:
+                min_val, mode, max_val = value_range
+            else:
+                min_val, max_val = value_range
+                mode = (min_val + max_val) / 2
+
+            c = (mode - min_val) / (max_val - min_val)  # Mode parameter
+            value = stats.triang.ppf(
+                uniform_sample, c=c, loc=min_val, scale=max_val - min_val
+            )
+            return value
+
+        # For other distributions, extract min_val and max_val
+        min_val, max_val = value_range[:2]  # Take only first two values
 
         if distribution == "uniform":
             # Simple linear transformation
@@ -232,20 +335,6 @@ class ParameterGenerator:
             value = stats.lognorm.ppf(uniform_sample, s=std_log, scale=np.exp(mean_log))
             return np.clip(value, min_val, max_val)
 
-        elif distribution == "triangular":
-            # Transform using triangular distribution
-            # Accept value_range as (min, max) or (min, mode, max)
-            if len(value_range) == 3:
-                min_val, mode, max_val = value_range
-            else:
-                mode = (min_val + max_val) / 2
-
-            c = (mode - min_val) / (max_val - min_val)  # Mode parameter
-            value = stats.triang.ppf(
-                uniform_sample, c=c, loc=min_val, scale=max_val - min_val
-            )
-            return value
-
         else:
             # Default to uniform
             return min_val + uniform_sample * (max_val - min_val)
@@ -266,6 +355,16 @@ class ParameterGenerator:
             "SOINIT",
             "SWINIT",
             "XKVH",
+            "SORW",
+            "SORG",
+            "SORM",
+            "SGR",
+            "SSR",
+            "SWC",
+            "SWIR",
+            "KWRO",
+            "KRSMAX",
+            "W",
         ]
 
         with open(output_file, "w", newline="") as f:
@@ -286,7 +385,22 @@ class ParameterGenerator:
         Returns:
             Formatted string
         """
-        if param_name in ["DPCOEF", "POROS", "SOINIT", "SWINIT"]:
+        if param_name in [
+            "DPCOEF",
+            "POROS",
+            "SOINIT",
+            "SWINIT",
+            "SORW",
+            "SORG",
+            "SORM",
+            "SGR",
+            "SSR",
+            "SWC",
+            "SWIR",
+            "KWRO",
+            "KRSMAX",
+            "W",
+        ]:
             return f"{value:.3f}"
         elif param_name == "XKVH":
             return f"{value:.2f}"
@@ -360,6 +474,14 @@ def generate_sensitivity_csv(
         "mmp_range": (1200, 2200),
         "soinit_range": (0.4, 0.6),
         "xkvh_range": (0.01, 0.1),
+        "sorw_range": (0.2, 0.5),
+        "sorg_range": (0.15, 0.35),
+        "sorm_range": (0.03, 0.1),
+        "sgr_range": (0.0, 0.1),
+        "swc_range": (0.05, 0.15, 0.18),
+        "kwro_range": (0.1, 0.5),
+        "krsmax_range": (0.1, 0.6),
+        "w_range": (0.2, 0.8),
     }
 
     # Update with custom ranges if provided
@@ -368,7 +490,7 @@ def generate_sensitivity_csv(
 
     # Auto-calculate number of runs if not specified
     if n_runs is None:
-        n_params = 5  # DPCOEF, POROS, MMP, SOINIT, XKVH
+        n_params = 13  # DPCOEF, POROS, MMP, SOINIT, XKVH, SORW, SORG, SORM, SGR, SWC, KWRO, KRSMAX, W
         n_runs = calculate_recommended_runs(n_params, sensitivity_level)
         print(
             f"Auto-calculated {n_runs} runs for {n_params} parameters (sensitivity level: {sensitivity_level})"
@@ -387,6 +509,16 @@ def generate_sensitivity_csv(
         params["SOINIT"] = round(params["SOINIT"], 3)
         params["SWINIT"] = round(params["SWINIT"], 3)
         params["XKVH"] = round(params["XKVH"], 2)
+        params["SORW"] = round(params["SORW"], 3)
+        params["SORG"] = round(params["SORG"], 3)
+        params["SORM"] = round(params["SORM"], 3)
+        params["SGR"] = round(params["SGR"], 3)
+        params["SSR"] = round(params["SSR"], 3)
+        params["SWC"] = round(params["SWC"], 3)
+        params["SWIR"] = round(params["SWIR"], 3)
+        params["KWRO"] = round(params["KWRO"], 3)
+        params["KRSMAX"] = round(params["KRSMAX"], 3)
+        params["W"] = round(params["W"], 3)
 
     # Save to CSV
     generator.save_to_csv(params_list, output_file)

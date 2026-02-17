@@ -55,12 +55,12 @@ RESULTS_ANALYZER_CONFIG = {
 
 # Parameter generation configuration (sensitivity analysis)
 #
-# Sensitivity Level Guidelines (for 6 parameters):
-#   - 'minimum':    ~7 runs   (n_params + 1) - Very sparse, quick testing only
-#   - 'low':        ~12 runs  (2 * n_params) - Basic coverage, preliminary analysis
-#   - 'medium':     ~60 runs  (10 * n_params) - Recommended for most cases
-#   - 'high':       ~300 runs (50 * n_params) - Detailed sensitivity analysis
-#   - 'very_high':  ~600 runs (100 * n_params) - Comprehensive analysis
+# Sensitivity Level Guidelines (for 13 parameters):
+#   - 'minimum':    ~14 runs   (n_params + 1) - Very sparse, quick testing only
+#   - 'low':        ~26 runs   (2 * n_params) - Basic coverage, preliminary analysis
+#   - 'medium':     ~130 runs  (10 * n_params) - Recommended for most cases
+#   - 'high':       ~650 runs  (50 * n_params) - Detailed sensitivity analysis
+#   - 'very_high':  ~1300 runs (100 * n_params) - Comprehensive analysis
 #
 PARAMETER_GENERATOR_CONFIG = {
     "output_file": str(INPUT_CSV_FILE),
@@ -71,15 +71,37 @@ PARAMETER_GENERATOR_CONFIG = {
     "use_lhs": True,  # Use Latin Hypercube Sampling for better parameter space coverage
     "dpcoef_range": (0.3, 0.99),
     "poros_range": (0.08, 0.13),
-    "mmp_range": (1200, 2200),
+    "mmp_range": (1300, 1900),
     "soinit_range": (0.4, 0.6),
     "xkvh_range": (0.01, 0.1),
+    # Relative permeability parameters
+    "sorw_range": (0.2, 0.5),
+    "sorg_range": (0.15, 0.35),
+    "sorm_range": (0.03, 0.1),
+    "sgr_range": (0.0, 0.1),  # SSR will be set equal to SGR
+    "swc_range": (
+        0.05,
+        0.15,
+        0.18,
+    ),  # Triangular: (min, mode, max) - SWIR will be set equal to SWC
+    "kwro_range": (0.1, 0.5),
+    "krsmax_range": (0.1, 0.6),
+    "w_range": (0.2, 0.8),
     "distributions": {
         "DPCOEF": "uniform",
         "POROS": "normal",
         "MMP": "uniform",
         "SOINIT": "uniform",
         "XKVH": "uniform",
+        # Relative permeability distributions
+        "SORW": "uniform",
+        "SORG": "uniform",
+        "SORM": "uniform",
+        "SGR": "uniform",
+        "SWC": "triangular",
+        "KWRO": "uniform",
+        "KRSMAX": "uniform",
+        "W": "uniform",
     },
 }
 

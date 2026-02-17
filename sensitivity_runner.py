@@ -110,6 +110,14 @@ def run_sensitivity_analysis(sensitivity_level: str = None, verbose: bool = True
             "mmp_range": config["mmp_range"],
             "soinit_range": config["soinit_range"],
             "xkvh_range": config["xkvh_range"],
+            "sorw_range": config["sorw_range"],
+            "sorg_range": config["sorg_range"],
+            "sorm_range": config["sorm_range"],
+            "sgr_range": config["sgr_range"],
+            "swc_range": config["swc_range"],
+            "kwro_range": config["kwro_range"],
+            "krsmax_range": config["krsmax_range"],
+            "w_range": config["w_range"],
         }
 
         if verbose:
@@ -182,16 +190,16 @@ def _parse_arguments():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python sensitivity_runner.py -s medium              # Use 'medium' sensitivity (~60 runs)
-  python sensitivity_runner.py --sensitivity high     # Use 'high' sensitivity (~300 runs)
+  python sensitivity_runner.py -s medium              # Use 'medium' sensitivity (~130 runs)
+  python sensitivity_runner.py --sensitivity high     # Use 'high' sensitivity (~650 runs)
   python sensitivity_runner.py -s config              # Use config file setting
 
 Sensitivity levels:
-  minimum   - ~7 runs    - Very sparse, quick testing only
-  low       - ~12 runs   - Basic coverage, preliminary analysis
-  medium    - ~60 runs   - Recommended for most cases
-  high      - ~300 runs  - Detailed sensitivity analysis
-  very_high - ~600 runs  - Comprehensive analysis
+  minimum   - ~14 runs    - Very sparse, quick testing only
+  low       - ~26 runs    - Basic coverage, preliminary analysis
+  medium    - ~130 runs   - Recommended for most cases
+  high      - ~650 runs   - Detailed sensitivity analysis
+  very_high - ~1300 runs  - Comprehensive analysis
   config    - Use config file setting
         """,
     )
