@@ -45,8 +45,19 @@ def analyze_correlations(csv_file: str, output_dir: str = None, verbose: bool = 
         print(f"Complete runs: {len(df_complete)}")
         print(f"Incomplete runs: {len(df) - len(df_complete)}\n")
 
-    # Parameters to analyze (excluding SWINIT since SWINIT = 1.0 - SOINIT)
-    params = ["DPCOEF", "POROS", "MMP", "SOINIT", "XKVH"]
+    # Parameters to analyze (excluding SWINIT since SWINIT = 1.0 - SOINIT, and SSR since SSR = SGR, and SWIR since SWIR = SWC)
+    params = [
+        "DPCOEF",
+        "POROS",
+        "MMP",
+        "SOINIT",
+        "XKVH",
+        "SORW",
+        "SORG",
+        "SORM",
+        "SGR",
+        "SWC",
+    ]
     targets = ["oil_recovery_at_1hcpv", "oil_recovery_at_2hcpv"]
 
     # Calculate correlations
@@ -95,8 +106,19 @@ def build_ml_models(
     df = pd.read_csv(csv_file)
     df_complete = df.dropna(subset=["oil_recovery_at_1hcpv", "oil_recovery_at_2hcpv"])
 
-    # Prepare features and targets (excluding SWINIT since SWINIT = 1.0 - SOINIT)
-    params = ["DPCOEF", "POROS", "MMP", "SOINIT", "XKVH"]
+    # Prepare features and targets (excluding SWINIT since SWINIT = 1.0 - SOINIT, and SSR since SSR = SGR, and SWIR since SWIR = SWC)
+    params = [
+        "DPCOEF",
+        "POROS",
+        "MMP",
+        "SOINIT",
+        "XKVH",
+        "SORW",
+        "SORG",
+        "SORM",
+        "SGR",
+        "SWC",
+    ]
     X = df_complete[params].values
     y_1hcpv = df_complete["oil_recovery_at_1hcpv"].values
     y_2hcpv = df_complete["oil_recovery_at_2hcpv"].values
@@ -318,6 +340,14 @@ def _plot_tornado_charts(correlations, output_dir):
         "MMP": "MMP",
         "SOINIT": r"$S_{oi}$",
         "XKVH": r"$K_v/K_h$",
+        "SORW": r"$S_{orw}$",
+        "SORG": r"$S_{org}$",
+        "SORM": r"$S_{orm}$",
+        "SGR": r"$S_{gr}$",
+        "SWC": r"$S_{wc}$",
+        "KWRO": r"$k_{ro}^w$",
+        "KRSMAX": r"$k_{rs}^{max}$",
+        "W": "W",
     }
 
     # Oil at 1 HCPV - Tornado chart
@@ -562,11 +592,15 @@ def _save_regression_equations(results, params, scaler, output_dir, correlations
 
                 f.write(f"\n\n  Total terms: {len(poly_feature_names)}\n")
                 f.write("  Including:\n")
-                f.write("  - Linear terms (5): DPCOEF, POROS, MMP, SOINIT, XKVH\n")
                 f.write(
-                    "  - Squared terms (5): DPCOEF², POROS², MMP², SOINIT², XKVH²\n"
+                    "  - Linear terms (10): DPCOEF, POROS, MMP, SOINIT, XKVH, SORW, SORG, SORM, SGR, SWC\n"
                 )
-                f.write("  - Interaction terms (10): All pairwise products\n")
+                f.write(
+                    "  - Squared terms (10): DPCOEF², POROS², MMP², SOINIT², XKVH², SORW², SORG², SORM², SGR², SWC²\n"
+                )
+                f.write(
+                    "  - Interaction terms (45): All pairwise products (10 choose 2)\n"
+                )
 
                 f.write("\n\nTo use this equation:\n")
                 f.write("1. Scale input parameters using MinMaxScaler:\n")
@@ -582,7 +616,7 @@ def _save_regression_equations(results, params, scaler, output_dir, correlations
         f.write("\nExample calculation:\n")
         f.write("-" * 80 + "\n")
         f.write(
-            "If you have: DPCOEF=0.85, POROS=0.10, MMP=1350, SOINIT=0.50, XKVH=0.05\n\n"
+            "If you have: DPCOEF=0.85, POROS=0.10, MMP=1350, SOINIT=0.50, XKVH=0.05, etc.\n\n"
         )
         f.write(
             "1. Scale each parameter to [0, 1] using: (value - min) / (max - min)\n"
