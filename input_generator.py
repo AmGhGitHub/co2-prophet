@@ -53,7 +53,8 @@ def generate_input_file(base_file: str, output_file: str, params: dict) -> None:
     Args:
         base_file: Path to the base input file
         output_file: Path to the output file
-        params: Dictionary with keys: DPCOEF, PERMAV, POROS, MMP, SOINIT, SWINIT, XKVH
+        params: Dictionary with keys: DPCOEF, PERMAV, POROS, MMP, SOINIT, SWINIT, XKVH,
+                SORW, SORG, SORM, SGR, SSR, SWC, SWIR, KWRO, KRSMAX, W
     """
     with open(base_file, "r") as f:
         lines = f.readlines()
@@ -112,13 +113,78 @@ def generate_input_file(base_file: str, output_file: str, params: dict) -> None:
             lines[i + 1] = ",".join(parts)
             break
 
+    # Update SORW, SORG, SORM (line with 'SORW     SORG     SORM')
+    for i, line in enumerate(lines):
+        if "SORW" in line and "SORG" in line and "SORM" in line:
+            value_line = lines[i + 1]
+            parts = value_line.split(",")
+            # parts[0] = SORW, parts[1] = SORG, parts[2] = SORM
+            parts[0] = format_value(params["SORW"])
+            parts[1] = replace_value_preserve_spacing(parts[1], params["SORG"])
+            parts[2] = replace_value_preserve_spacing(
+                parts[2], params["SORM"], has_newline=True
+            )
+            lines[i + 1] = ",".join(parts)
+            break
+
+    # Update SGR, SSR (line with 'SGR     SSR')
+    for i, line in enumerate(lines):
+        if "SGR" in line and "SSR" in line:
+            value_line = lines[i + 1]
+            parts = value_line.split(",")
+            # parts[0] = SGR, parts[1] = SSR
+            parts[0] = format_value(params["SGR"])
+            parts[1] = replace_value_preserve_spacing(
+                parts[1], params["SSR"], has_newline=True
+            )
+            lines[i + 1] = ",".join(parts)
+            break
+
+    # Update SWC, SWIR (line with 'SWC     SWIR')
+    for i, line in enumerate(lines):
+        if "SWC" in line and "SWIR" in line:
+            value_line = lines[i + 1]
+            parts = value_line.split(",")
+            # parts[0] = SWC, parts[1] = SWIR
+            parts[0] = format_value(params["SWC"])
+            parts[1] = replace_value_preserve_spacing(
+                parts[1], params["SWIR"], has_newline=True
+            )
+            lines[i + 1] = ",".join(parts)
+            break
+
+    # Update KWRO, KRSMAX (line with 'KROCW     KWRO     KRSMAX     KRGCW')
+    for i, line in enumerate(lines):
+        if "KROCW" in line and "KWRO" in line and "KRSMAX" in line:
+            value_line = lines[i + 1]
+            parts = value_line.split(",")
+            # parts[0] = KROCW, parts[1] = KWRO, parts[2] = KRSMAX, parts[3] = KRGCW
+            # Keep KROCW (parts[0]) and KRGCW (parts[3]) as is
+            parts[1] = replace_value_preserve_spacing(parts[1], params["KWRO"])
+            parts[2] = replace_value_preserve_spacing(parts[2], params["KRSMAX"])
+            lines[i + 1] = ",".join(parts)
+            break
+
+    # Update W (line with 'KRMSEL     W')
+    for i, line in enumerate(lines):
+        if "KRMSEL" in line and "W" in line:
+            value_line = lines[i + 1]
+            parts = value_line.split(",")
+            # parts[0] = KRMSEL, parts[1] = W
+            # Keep KRMSEL as is (parts[0])
+            parts[1] = replace_value_preserve_spacing(
+                parts[1], params["W"], has_newline=True
+            )
+            lines[i + 1] = ",".join(parts)
+            break
+
     with open(output_file, "w") as f:
         f.writelines(lines)
 
     print(
         f"Created '{output_file}' with: DPCOEF={params['DPCOEF']:.2f}, PERMAV={params['PERMAV']:.1f}, "
         f"POROS={params['POROS']:.3f}, MMP={params['MMP']:.0f}, SOINIT={params['SOINIT']:.3f}, "
-        f"SWINIT={params['SWINIT']:.3f}, XKVH={params['XKVH']:.2f}"
+        f"SWINIT={params['SWINIT']:.3f}, XKVH={params['XKVH']:.2f}, SORM={params['SORM']:.3f}"
     )
 
 
@@ -154,6 +220,17 @@ def process_csv_and_generate_input_files(
                 "SOINIT": float(row["SOINIT"]),
                 "SWINIT": float(row["SWINIT"]),
                 "XKVH": float(row["XKVH"]),
+                # Relative permeability parameters (now included from CSV)
+                "SORW": float(row["SORW"]),
+                "SORG": float(row["SORG"]),
+                "SORM": float(row["SORM"]),
+                "SGR": float(row["SGR"]),
+                "SSR": float(row["SSR"]),
+                "SWC": float(row["SWC"]),
+                "SWIR": float(row["SWIR"]),
+                "KWRO": float(row["KWRO"]),
+                "KRSMAX": float(row["KRSMAX"]),
+                "W": float(row["W"]),
             }
             output_file = f"{output_file_dir}/{output_prefix}{run_number}.SAV".upper()
             generate_input_file(base_file, output_file, params)

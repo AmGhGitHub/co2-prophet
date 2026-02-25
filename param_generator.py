@@ -33,19 +33,26 @@ class ParameterGenerator:
         mmp_range=(1200, 2200),
         soinit_range=(0.4, 0.6),
         xkvh_range=(0.01, 0.1),
-        sorw_range=(0.2, 0.5),
-        sorg_range=(0.15, 0.35),
-        sorm_range=(0.03, 0.1),
-        sgr_range=(0.0, 0.1),
-        swc_range=(0.05, 0.15, 0.18),
-        kwro_range=(0.1, 0.5),
-        krsmax_range=(0.1, 0.6),
-        w_range=(0.2, 0.8),
+        # Fixed parameters (not varied in sensitivity analysis)
+        sorw_default=0.35,
+        sorg_default=0.35,
+        sorm_default=0.05,
+        sgr_default=0.05,
+        swc_default=0.15,
+        kwro_default=0.3,
+        krsmax_default=0.35,
+        w_default=0.66,
         distributions=None,
         use_lhs=True,
     ) -> list:
         """
         Generate random parameters for sensitivity analysis using Latin Hypercube Sampling.
+
+        **Sensitivity Parameters (varied):**
+        - DPCOEF, POROS, MMP, SOINIT, XKVH
+
+        **Fixed Parameters (constant values):**
+        - SORW, SORG, SORM, SGR, SWC, KWRO, KRSMAX, W
 
         Args:
             n_runs: Number of simulation runs to generate
@@ -54,14 +61,14 @@ class ParameterGenerator:
             mmp_range: (min, max) for minimum miscibility pressure (psi)
             soinit_range: (min, max) for initial oil saturation (fraction)
             xkvh_range: (min, max) for vertical to horizontal permeability ratio
-            sorw_range: (min, max) for residual oil saturation to water
-            sorg_range: (min, max) for residual oil saturation to gas
-            sorm_range: (min, max) for residual oil saturation to miscible
-            sgr_range: (min, max) for residual gas saturation (SSR will be set equal)
-            swc_range: (min, mode, max) for connate water saturation (SWIR will be set equal)
-            kwro_range: (min, max) for oil relative permeability at connate water
-            krsmax_range: (min, max) for maximum solvent relative permeability
-            w_range: (min, max) for exponent W
+            sorw_default: Fixed value for residual oil saturation to water
+            sorg_default: Fixed value for residual oil saturation to gas
+            sorm_default: Fixed value for residual oil saturation to miscible
+            sgr_default: Fixed value for residual gas saturation (SSR will be set equal)
+            swc_default: Fixed value for connate water saturation (SWIR will be set equal)
+            kwro_default: Fixed value for oil relative permeability at connate water
+            krsmax_default: Fixed value for maximum solvent relative permeability
+            w_default: Fixed value for exponent W
             distributions: Dictionary specifying distribution types for each parameter
                           Options: 'uniform', 'normal', 'triangular'
                           Example: {'DPCOEF': 'uniform', 'POROS': 'normal'}
@@ -77,31 +84,15 @@ class ParameterGenerator:
                 "MMP": "uniform",
                 "SOINIT": "uniform",
                 "XKVH": "uniform",
-                "SORW": "uniform",
-                "SORG": "uniform",
-                "SORM": "uniform",
-                "SGR": "uniform",
-                "SWC": "triangular",
-                "KWRO": "uniform",
-                "KRSMAX": "uniform",
-                "W": "uniform",
             }
 
-        # Parameter names and ranges
+        # Parameter names and ranges (only sensitivity parameters)
         param_names = [
             "DPCOEF",
             "POROS",
             "MMP",
             "SOINIT",
             "XKVH",
-            "SORW",
-            "SORG",
-            "SORM",
-            "SGR",
-            "SWC",
-            "KWRO",
-            "KRSMAX",
-            "W",
         ]
         param_ranges = [
             dpcoef_range,
@@ -109,14 +100,6 @@ class ParameterGenerator:
             mmp_range,
             soinit_range,
             xkvh_range,
-            sorw_range,
-            sorg_range,
-            sorm_range,
-            sgr_range,
-            swc_range,
-            kwro_range,
-            krsmax_range,
-            w_range,
         ]
 
         params_list = []
@@ -148,6 +131,16 @@ class ParameterGenerator:
 
                 # Calculate SWINIT as complement of SOINIT
                 params["SWINIT"] = 1.0 - params["SOINIT"]
+
+                # Add fixed parameters (not varied in sensitivity)
+                params["SORW"] = sorw_default
+                params["SORG"] = sorg_default
+                params["SORM"] = sorm_default
+                params["SGR"] = sgr_default
+                params["SWC"] = swc_default
+                params["KWRO"] = kwro_default
+                params["KRSMAX"] = krsmax_default
+                params["W"] = w_default
 
                 # Set SSR equal to SGR
                 params["SSR"] = params["SGR"]
@@ -190,40 +183,17 @@ class ParameterGenerator:
                     "XKVH", xkvh_range, distributions.get("XKVH", "uniform")
                 )
 
-                # Generate relative permeability parameters
-                params["SORW"] = self._generate_value(
-                    "SORW", sorw_range, distributions.get("SORW", "uniform")
-                )
-
-                params["SORG"] = self._generate_value(
-                    "SORG", sorg_range, distributions.get("SORG", "uniform")
-                )
-
-                params["SORM"] = self._generate_value(
-                    "SORM", sorm_range, distributions.get("SORM", "uniform")
-                )
-
-                params["SGR"] = self._generate_value(
-                    "SGR", sgr_range, distributions.get("SGR", "uniform")
-                )
+                # Add fixed parameters (not varied in sensitivity)
+                params["SORW"] = sorw_default
+                params["SORG"] = sorg_default
+                params["SORM"] = sorm_default
+                params["SGR"] = sgr_default
                 params["SSR"] = params["SGR"]  # SSR equals SGR
-
-                params["SWC"] = self._generate_value(
-                    "SWC", swc_range, distributions.get("SWC", "triangular")
-                )
+                params["SWC"] = swc_default
                 params["SWIR"] = params["SWC"]  # SWIR equals SWC
-
-                params["KWRO"] = self._generate_value(
-                    "KWRO", kwro_range, distributions.get("KWRO", "uniform")
-                )
-
-                params["KRSMAX"] = self._generate_value(
-                    "KRSMAX", krsmax_range, distributions.get("KRSMAX", "uniform")
-                )
-
-                params["W"] = self._generate_value(
-                    "W", w_range, distributions.get("W", "uniform")
-                )
+                params["KWRO"] = kwro_default
+                params["KRSMAX"] = krsmax_default
+                params["W"] = w_default
 
                 params_list.append(params)
 
@@ -467,21 +437,22 @@ def generate_sensitivity_csv(
     """
     generator = ParameterGenerator(seed=seed)
 
-    # Default ranges
+    # Default ranges (only for sensitivity parameters)
     ranges = {
         "dpcoef_range": (0.7, 1.0),
         "poros_range": (0.15, 0.35),
         "mmp_range": (1200, 2200),
         "soinit_range": (0.4, 0.6),
         "xkvh_range": (0.01, 0.1),
-        "sorw_range": (0.2, 0.5),
-        "sorg_range": (0.15, 0.35),
-        "sorm_range": (0.03, 0.1),
-        "sgr_range": (0.0, 0.1),
-        "swc_range": (0.05, 0.15, 0.18),
-        "kwro_range": (0.1, 0.5),
-        "krsmax_range": (0.1, 0.6),
-        "w_range": (0.2, 0.8),
+        # Fixed parameters (defaults, not ranges)
+        "sorw_default": 0.35,
+        "sorg_default": 0.35,
+        "sorm_default": 0.05,
+        "sgr_default": 0.05,
+        "swc_default": 0.15,
+        "kwro_default": 0.3,
+        "krsmax_default": 0.35,
+        "w_default": 0.66,
     }
 
     # Update with custom ranges if provided
@@ -490,7 +461,7 @@ def generate_sensitivity_csv(
 
     # Auto-calculate number of runs if not specified
     if n_runs is None:
-        n_params = 13  # DPCOEF, POROS, MMP, SOINIT, XKVH, SORW, SORG, SORM, SGR, SWC, KWRO, KRSMAX, W
+        n_params = 5  # Only 5 sensitivity parameters: DPCOEF, POROS, MMP, SOINIT, XKVH
         n_runs = calculate_recommended_runs(n_params, sensitivity_level)
         print(
             f"Auto-calculated {n_runs} runs for {n_params} parameters (sensitivity level: {sensitivity_level})"

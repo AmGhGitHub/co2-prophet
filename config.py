@@ -69,39 +69,27 @@ PARAMETER_GENERATOR_CONFIG = {
     "sensitivity_level": "medium",  # 'minimum', 'low', 'medium', 'high', 'very_high'
     "seed": 42,  # Random seed (set to None for different data each run)
     "use_lhs": True,  # Use Latin Hypercube Sampling for better parameter space coverage
+    # Sensitivity parameters (varied in analysis)
     "dpcoef_range": (0.3, 0.99),
     "poros_range": (0.08, 0.13),
     "mmp_range": (1300, 1900),
-    "soinit_range": (0.4, 0.6),
-    "xkvh_range": (0.01, 0.1),
-    # Relative permeability parameters
-    "sorw_range": (0.2, 0.5),
-    "sorg_range": (0.15, 0.35),
-    "sorm_range": (0.03, 0.1),
-    "sgr_range": (0.0, 0.1),  # SSR will be set equal to SGR
-    "swc_range": (
-        0.05,
-        0.15,
-        0.18,
-    ),  # Triangular: (min, mode, max) - SWIR will be set equal to SWC
-    "kwro_range": (0.1, 0.5),
-    "krsmax_range": (0.1, 0.6),
-    "w_range": (0.2, 0.8),
+    "soinit_range": (0.3, 0.6),
+    "xkvh_range": (0.001, 0.15),
+    # Fixed parameters (constant values, not varied)
+    "sorw_default": 0.35,
+    "sorg_default": 0.35,
+    "sorm_default": 0.05,
+    "sgr_default": 0.05,  # SSR will be set equal to SGR
+    "swc_default": 0.15,  # SWIR will be set equal to SWC
+    "kwro_default": 0.3,
+    "krsmax_default": 0.35,
+    "w_default": 0.66,
     "distributions": {
         "DPCOEF": "uniform",
         "POROS": "normal",
         "MMP": "uniform",
         "SOINIT": "uniform",
         "XKVH": "uniform",
-        # Relative permeability distributions
-        "SORW": "uniform",
-        "SORG": "uniform",
-        "SORM": "uniform",
-        "SGR": "uniform",
-        "SWC": "triangular",
-        "KWRO": "uniform",
-        "KRSMAX": "uniform",
-        "W": "uniform",
     },
 }
 

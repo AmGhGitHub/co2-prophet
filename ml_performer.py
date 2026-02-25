@@ -45,18 +45,15 @@ def analyze_correlations(csv_file: str, output_dir: str = None, verbose: bool = 
         print(f"Complete runs: {len(df_complete)}")
         print(f"Incomplete runs: {len(df) - len(df_complete)}\n")
 
-    # Parameters to analyze (excluding SWINIT since SWINIT = 1.0 - SOINIT, and SSR since SSR = SGR, and SWIR since SWIR = SWC)
+    # Parameters to analyze - Only sensitivity parameters (fixed params excluded)
+    # Excluded: SWINIT (= 1.0 - SOINIT), SSR (= SGR), SWIR (= SWC)
+    # Excluded: SORW, SORG, SORM, SGR, SWC, KWRO, KRSMAX, W (fixed values, not varied)
     params = [
         "DPCOEF",
         "POROS",
         "MMP",
         "SOINIT",
         "XKVH",
-        "SORW",
-        "SORG",
-        "SORM",
-        "SGR",
-        "SWC",
     ]
     targets = ["oil_recovery_at_1hcpv", "oil_recovery_at_2hcpv"]
 
@@ -106,18 +103,15 @@ def build_ml_models(
     df = pd.read_csv(csv_file)
     df_complete = df.dropna(subset=["oil_recovery_at_1hcpv", "oil_recovery_at_2hcpv"])
 
-    # Prepare features and targets (excluding SWINIT since SWINIT = 1.0 - SOINIT, and SSR since SSR = SGR, and SWIR since SWIR = SWC)
+    # Prepare features and targets - Only sensitivity parameters (fixed params excluded)
+    # Excluded: SWINIT (= 1.0 - SOINIT), SSR (= SGR), SWIR (= SWC)
+    # Excluded: SORW, SORG, SORM, SGR, SWC, KWRO, KRSMAX, W (fixed values, not varied)
     params = [
         "DPCOEF",
         "POROS",
         "MMP",
         "SOINIT",
         "XKVH",
-        "SORW",
-        "SORG",
-        "SORM",
-        "SGR",
-        "SWC",
     ]
     X = df_complete[params].values
     y_1hcpv = df_complete["oil_recovery_at_1hcpv"].values
@@ -592,14 +586,18 @@ def _save_regression_equations(results, params, scaler, output_dir, correlations
 
                 f.write(f"\n\n  Total terms: {len(poly_feature_names)}\n")
                 f.write("  Including:\n")
+                f.write("  - Linear terms (5): DPCOEF, POROS, MMP, SOINIT, XKVH\n")
                 f.write(
-                    "  - Linear terms (10): DPCOEF, POROS, MMP, SOINIT, XKVH, SORW, SORG, SORM, SGR, SWC\n"
+                    "  - Squared terms (5): DPCOEF², POROS², MMP², SOINIT², XKVH²\n"
                 )
                 f.write(
-                    "  - Squared terms (10): DPCOEF², POROS², MMP², SOINIT², XKVH², SORW², SORG², SORM², SGR², SWC²\n"
+                    "  - Interaction terms (10): All pairwise products (5 choose 2)\n"
                 )
                 f.write(
-                    "  - Interaction terms (45): All pairwise products (10 choose 2)\n"
+                    "\n  Note: Only sensitivity parameters are included in the model.\n"
+                )
+                f.write(
+                    "  Fixed parameters (not varied): SORW, SORG, SORM, SGR, SWC, KWRO, KRSMAX, W\n"
                 )
 
                 f.write("\n\nTo use this equation:\n")

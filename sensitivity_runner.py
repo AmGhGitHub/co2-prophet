@@ -103,21 +103,22 @@ def run_sensitivity_analysis(sensitivity_level: str = None, verbose: bool = True
         if verbose:
             print(f"Sensitivity level: {sensitivity_level.replace('_', ' ').title()}\n")
 
-        # Prepare custom ranges
+        # Prepare custom ranges (only sensitivity parameters)
         custom_ranges = {
             "dpcoef_range": config["dpcoef_range"],
             "poros_range": config["poros_range"],
             "mmp_range": config["mmp_range"],
             "soinit_range": config["soinit_range"],
             "xkvh_range": config["xkvh_range"],
-            "sorw_range": config["sorw_range"],
-            "sorg_range": config["sorg_range"],
-            "sorm_range": config["sorm_range"],
-            "sgr_range": config["sgr_range"],
-            "swc_range": config["swc_range"],
-            "kwro_range": config["kwro_range"],
-            "krsmax_range": config["krsmax_range"],
-            "w_range": config["w_range"],
+            # Fixed parameters
+            "sorw_default": config.get("sorw_default", 0.35),
+            "sorg_default": config.get("sorg_default", 0.35),
+            "sorm_default": config.get("sorm_default", 0.05),
+            "sgr_default": config.get("sgr_default", 0.05),
+            "swc_default": config.get("swc_default", 0.15),
+            "kwro_default": config.get("kwro_default", 0.3),
+            "krsmax_default": config.get("krsmax_default", 0.35),
+            "w_default": config.get("w_default", 0.66),
         }
 
         if verbose:
@@ -190,17 +191,19 @@ def _parse_arguments():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python sensitivity_runner.py -s medium              # Use 'medium' sensitivity (~130 runs)
-  python sensitivity_runner.py --sensitivity high     # Use 'high' sensitivity (~650 runs)
+  python sensitivity_runner.py -s medium              # Use 'medium' sensitivity (~50 runs)
+  python sensitivity_runner.py --sensitivity high     # Use 'high' sensitivity (~250 runs)
   python sensitivity_runner.py -s config              # Use config file setting
 
-Sensitivity levels:
-  minimum   - ~14 runs    - Very sparse, quick testing only
-  low       - ~26 runs    - Basic coverage, preliminary analysis
-  medium    - ~130 runs   - Recommended for most cases
-  high      - ~650 runs   - Detailed sensitivity analysis
-  very_high - ~1300 runs  - Comprehensive analysis
+Sensitivity levels (for 5 parameters: DPCOEF, POROS, MMP, SOINIT, XKVH):
+  minimum   - ~6 runs     - Very sparse, quick testing only
+  low       - ~10 runs    - Basic coverage, preliminary analysis
+  medium    - ~50 runs    - Recommended for most cases
+  high      - ~250 runs   - Detailed sensitivity analysis
+  very_high - ~500 runs   - Comprehensive analysis
   config    - Use config file setting
+
+Fixed parameters (not varied): SORW, SORG, SORM, SGR, SWC, KWRO, KRSMAX, W
         """,
     )
 
