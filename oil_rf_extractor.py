@@ -14,20 +14,35 @@ OIL_RECOVERY_FACTORS = [
 
 
 def get_oil_recovery_factors(
-    csv_dir: str, output_file: str = None, verbose: bool = True
+    csv_dir: str, params_csv: str = None, output_file: str = None, verbose: bool = True
 ) -> pd.DataFrame:
     """
     Extract oil produced at key injection points (≈1 and ≈2 HCPV) from all runs.
+    Scales results by (SOINIT / 0.85) to normalize to %OOIP basis.
 
     Args:
         csv_dir: Directory containing CSV files with simulation results
+        params_csv: Path to parameters CSV file (to read SOINIT for scaling)
         output_file: Optional path to save the summary dataframe as CSV
         verbose: If True, print status messages (default: True)
 
     Returns:
-        DataFrame with columns: RUN, Oil_at_1HCPV, Oil_at_2HCPV
+        DataFrame with columns: RUN, oil_recovery_at_1hcpv, oil_recovery_at_2hcpv
     """
     results = []
+
+    # Read SOINIT values from parameters CSV if provided
+    soinit_dict = {}
+    if params_csv:
+        try:
+            params_df = pd.read_csv(params_csv)
+            soinit_dict = dict(zip(params_df["RUN"], params_df["SOINIT"]))
+            if verbose:
+                print(f"Loaded SOINIT values from {params_csv} for scaling")
+        except Exception as e:
+            if verbose:
+                print(f"Warning: Could not read SOINIT from {params_csv}: {e}")
+                print("Will use default scaling factor of 1.0")
 
     # Get all CSV files and sort by run number
     csv_files = sorted(
@@ -53,11 +68,15 @@ def get_oil_recovery_factors(
         # Find oil produced at Injected total ≈ 2
         oil_at_2 = _find_value_at_injection(df, target_injection=2.0)
 
-        # Convert to percentage (%OOIP)
+        # Get SOINIT for this run (default to 0.85 if not found)
+        soinit = soinit_dict.get(run_number, 0.85)
+        scaling_factor = soinit / 0.85
+
+        # Convert to percentage (%OOIP) and apply SOINIT scaling
         if oil_at_1 is not None:
-            oil_at_1 = oil_at_1 * 100
+            oil_at_1 = oil_at_1 * 100 * scaling_factor
         if oil_at_2 is not None:
-            oil_at_2 = oil_at_2 * 100
+            oil_at_2 = oil_at_2 * 100 * scaling_factor
 
         results.append(
             {
@@ -181,7 +200,7 @@ if __name__ == "__main__":
 
     # Extract metrics
     print("Extracting key metrics from simulation results...")
-    recovery_factors_df = get_oil_recovery_factors(csv_dir, output_file)
+    recovery_factors_df = get_oil_recovery_factors(csv_dir, params_csv, output_file)
 
     # Merge with parameters (LEFT join - keeps all runs, shows null for incomplete)
     print("Merging with input parameters...")
