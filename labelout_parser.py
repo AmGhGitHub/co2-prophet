@@ -514,7 +514,7 @@ def create_summary_dataframe(tables: Dict[str, pd.DataFrame]) -> pd.DataFrame:
         columns={
             "TIME_YRS": "Time, year",
             "TOTAL_HCPV": "Inj. CO2, hcpv",
-            "OIL_RECOVERY_PCT_OOIP": "RF,%COIP",
+            "OIL_RECOVERY_PCT_OOIP": "RF, %COIP",
             "INCR_OIL_MSTB": "Prd Oil Rate, bbl/day",
             "INCR_WATER_MSTB": "Prd Water Rate, bbl/day",
             "INCR_HC_GAS_MMSCF": "Prd HC Gas Rate, mmscf/day",
@@ -538,23 +538,25 @@ def create_summary_dataframe(tables: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     )
 
     # Calculate RF, %OOIP from RF, %COIP using SOINIT and SWC
-    # Formula: RF,%OOIP = RF,%COIP × SOINIT / (1 - SWC)
+    # Formula: RF,%OOIP = RF, %COIP × SOINIT / (1 - SWC)
     soinit = tables.get("soinit", 0.0)
     swc = tables.get("swc", 0.0)
 
     if soinit > 0 and (1 - swc) > 0:
-        summary_df["RF, %OOIP"] = (summary_df["RF,%COIP"] * soinit / (1 - swc)).round(2)
+        summary_df["RF, %OOIP"] = (summary_df["RF, %COIP"] * soinit / (1 - swc)).round(
+            2
+        )
     else:
         summary_df["RF, %OOIP"] = 0.0
 
-    # Reorder columns: move RF,%COIP to be right before RF, %OOIP
+    # Reorder columns: move RF, %COIP to be right before RF, %OOIP
     cols = list(summary_df.columns)
-    # Remove RF,%COIP from its current position
-    cols.remove("RF,%COIP")
+    # Remove RF, %COIP from its current position
+    cols.remove("RF, %COIP")
     # Find position of RF, %OOIP
     rf_ooip_idx = cols.index("RF, %OOIP")
-    # Insert RF,%COIP right before RF, %OOIP
-    cols.insert(rf_ooip_idx, "RF,%COIP")
+    # Insert RF, %COIP right before RF, %OOIP
+    cols.insert(rf_ooip_idx, "RF, %COIP")
     # Reorder the dataframe
     summary_df = summary_df[cols]
 
