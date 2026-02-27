@@ -17,12 +17,11 @@ def get_oil_recovery_factors(
     csv_dir: str, params_csv: str = None, output_file: str = None, verbose: bool = True
 ) -> pd.DataFrame:
     """
-    Extract oil produced at key injection points (≈1 and ≈2 HCPV) from all runs.
-    Scales results by (SOINIT / 0.85) to normalize to %OOIP basis.
+    Extract RF, %OOIP at key injection points (≈1 and ≈2 HCPV) from labelout CSV files.
 
     Args:
-        csv_dir: Directory containing CSV files with simulation results
-        params_csv: Path to parameters CSV file (to read SOINIT for scaling)
+        csv_dir: Directory containing labelout CSV files (from labelout_parser.py)
+        params_csv: Path to parameters CSV file (not used, kept for compatibility)
         output_file: Optional path to save the summary dataframe as CSV
         verbose: If True, print status messages (default: True)
 
@@ -31,52 +30,33 @@ def get_oil_recovery_factors(
     """
     results = []
 
-    # Read SOINIT values from parameters CSV if provided
-    soinit_dict = {}
-    if params_csv:
-        try:
-            params_df = pd.read_csv(params_csv)
-            soinit_dict = dict(zip(params_df["RUN"], params_df["SOINIT"]))
-            if verbose:
-                print(f"Loaded SOINIT values from {params_csv} for scaling")
-        except Exception as e:
-            if verbose:
-                print(f"Warning: Could not read SOINIT from {params_csv}: {e}")
-                print("Will use default scaling factor of 1.0")
-
-    # Get all CSV files and sort by run number
+    # Get all labelout CSV files and sort by run number
     csv_files = sorted(
         [
             f
             for f in os.listdir(csv_dir)
-            if f.startswith("OUTPUT_") and f.endswith(".csv")
+            if (f.startswith("labelout_") or f.startswith("LABELOUT_"))
+            and f.endswith(".csv")
         ],
         key=lambda x: int(x.split("_")[1].split(".")[0]),
     )
 
+    if verbose:
+        print(f"Found {len(csv_files)} labelout CSV files in {csv_dir}")
+
     for csv_file in csv_files:
         file_path = os.path.join(csv_dir, csv_file)
-        # Extract run number from filename (e.g., OUTPUT_1.csv -> 1)
-        run_number = int(csv_file.replace("OUTPUT_", "").replace(".csv", ""))
+        # Extract run number from filename (e.g., labelout_1.csv -> 1 or LABELOUT_1.csv -> 1)
+        run_number = int(csv_file.lower().replace("labelout_", "").replace(".csv", ""))
 
         # Read the CSV file
         df = pd.read_csv(file_path)
 
-        # Find oil produced at Injected total ≈ 1
-        oil_at_1 = _find_value_at_injection(df, target_injection=1.0)
+        # Find RF, %OOIP at Inj. CO2, hcpv ≈ 1
+        oil_at_1 = _find_rf_ooip_at_injection(df, target_injection=1.0)
 
-        # Find oil produced at Injected total ≈ 2
-        oil_at_2 = _find_value_at_injection(df, target_injection=2.0)
-
-        # Get SOINIT for this run (default to 0.85 if not found)
-        soinit = soinit_dict.get(run_number, 0.85)
-        scaling_factor = soinit / 0.85
-
-        # Convert to percentage (%OOIP) and apply SOINIT scaling
-        if oil_at_1 is not None:
-            oil_at_1 = oil_at_1 * 100 * scaling_factor
-        if oil_at_2 is not None:
-            oil_at_2 = oil_at_2 * 100 * scaling_factor
+        # Find RF, %OOIP at Inj. CO2, hcpv ≈ 2
+        oil_at_2 = _find_rf_ooip_at_injection(df, target_injection=2.0)
 
         results.append(
             {
@@ -106,42 +86,52 @@ def get_oil_recovery_factors(
     return oil_recovery_df
 
 
-def _find_value_at_injection(df: pd.DataFrame, target_injection: float) -> float:
+def _find_rf_ooip_at_injection(df: pd.DataFrame, target_injection: float) -> float:
     """
-    Find oil produced value at a target injection point using interpolation.
+    Find RF, %OOIP value at a target injection point using interpolation.
 
     Args:
-        df: DataFrame with 'Injected total' and 'Oil produced' columns
-        target_injection: Target injection value (e.g., 1.0 or 2.0)
+        df: DataFrame with 'Inj. CO2, hcpv' and 'RF, %OOIP' columns
+        target_injection: Target injection value in HCPV (e.g., 1.0 or 2.0)
 
     Returns:
-        Interpolated oil produced value or None if target is out of range
+        Interpolated RF, %OOIP value or None if target is out of range
     """
+    # Check if required columns exist
+    if "Inj. CO2, hcpv" not in df.columns or "RF, %OOIP" not in df.columns:
+        return None
+
+    # Drop rows with NaN values in required columns
+    df_clean = df[["Inj. CO2, hcpv", "RF, %OOIP"]].dropna()
+
+    if df_clean.empty:
+        return None
+
     # Check if target is within range
-    if target_injection < df["Injected total"].min():
+    if target_injection < df_clean["Inj. CO2, hcpv"].min():
         return None  # Target is before simulation start
 
-    if target_injection > df["Injected total"].max():
+    if target_injection > df_clean["Inj. CO2, hcpv"].max():
         return None  # Target is beyond simulation end
 
     # Find the two closest points
-    idx_below = df[df["Injected total"] <= target_injection].index[-1]
-    idx_above = df[df["Injected total"] >= target_injection].index[0]
+    idx_below = df_clean[df_clean["Inj. CO2, hcpv"] <= target_injection].index[-1]
+    idx_above = df_clean[df_clean["Inj. CO2, hcpv"] >= target_injection].index[0]
 
     # If exact match
     if idx_below == idx_above:
-        return df.loc[idx_below, "Oil produced"]
+        return df_clean.loc[idx_below, "RF, %OOIP"]
 
     # Linear interpolation
-    x1 = df.loc[idx_below, "Injected total"]
-    y1 = df.loc[idx_below, "Oil produced"]
-    x2 = df.loc[idx_above, "Injected total"]
-    y2 = df.loc[idx_above, "Oil produced"]
+    x1 = df_clean.loc[idx_below, "Inj. CO2, hcpv"]
+    y1 = df_clean.loc[idx_below, "RF, %OOIP"]
+    x2 = df_clean.loc[idx_above, "Inj. CO2, hcpv"]
+    y2 = df_clean.loc[idx_above, "RF, %OOIP"]
 
     # Interpolate
-    oil_value = y1 + (target_injection - x1) * (y2 - y1) / (x2 - x1)
+    rf_ooip = y1 + (target_injection - x1) * (y2 - y1) / (x2 - x1)
 
-    return oil_value
+    return round(rf_ooip, 2)
 
 
 def merge_results_with_input_parameters(
@@ -191,7 +181,7 @@ def merge_results_with_input_parameters(
 
 if __name__ == "__main__":
     # Hard-coded paths
-    csv_dir = r"C:\vDos\Prophet\sen-output-csv"
+    csv_dir = r"C:\vDos\Prophet\sen-labelout-csv"
     results_dir = r"d:\temp\co2-prophet\results\csv-results"
     params_csv = r"d:\temp\co2-prophet\sen-runs\sen_fbv.csv"
 

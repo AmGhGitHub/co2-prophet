@@ -19,6 +19,9 @@ PROPHET_OUTPUT_DIR = Path("C:/vDos/Prophet/sen-output")
 PROPHET_CSV_OUTPUT_DIR = Path("C:/vDos/Prophet/sen-output-csv")
 PROPHET_CSV_VARS_DIR = Path("C:/vDos/Prophet/sen-runs")  # Copy of input CSV file
 PROPHET_LABELOUT_DIR = Path("C:/vDos/Prophet/sen-labelout")  # Labelout files per run
+PROPHET_LABELOUT_CSV_DIR = Path(
+    "C:/vDos/Prophet/sen-labelout-csv"
+)  # Parsed labelout CSV summaries
 
 # Visualization outputs
 RESULTS_DIR = BASE_DIR / "results"
@@ -121,6 +124,8 @@ def get_all_paths():
         "PROPHET_OUTPUT_DIR": str(PROPHET_OUTPUT_DIR),
         "PROPHET_CSV_OUTPUT_DIR": str(PROPHET_CSV_OUTPUT_DIR),
         "PROPHET_CSV_VARS_DIR": str(PROPHET_CSV_VARS_DIR),
+        "PROPHET_LABELOUT_DIR": str(PROPHET_LABELOUT_DIR),
+        "PROPHET_LABELOUT_CSV_DIR": str(PROPHET_LABELOUT_CSV_DIR),
         "PLOT_OUTPUT_FILE": str(PLOT_OUTPUT_FILE),
     }
 

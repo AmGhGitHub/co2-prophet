@@ -9,6 +9,8 @@ from typing import Dict, Tuple
 
 import pandas as pd
 
+from config import PROPHET_LABELOUT_CSV_DIR, PROPHET_LABELOUT_DIR
+
 
 def parse_labelout_file(filepath: str) -> Dict[str, pd.DataFrame]:
     """
@@ -21,10 +23,13 @@ def parse_labelout_file(filepath: str) -> Dict[str, pd.DataFrame]:
         Dictionary containing:
         - 'reservoir_params': Single-row DataFrame with reservoir parameters
         - 'injection_cumulative': DataFrame with cumulative injection data
+        - 'injection_rates': Dictionary with constant injection rates (WATER_STB_D, SOLVENT_MMSCF_D)
         - 'production_cumulative': DataFrame with cumulative production (HCPV)
         - 'production_cumulative_rates': DataFrame with cumulative production (surface rates)
         - 'production_incremental': DataFrame with incremental production (HCPV)
         - 'production_incremental_rates': DataFrame with incremental production (surface rates)
+        - 'soinit': Initial oil saturation
+        - 'swc': Connate water saturation
     """
     with open(filepath, "r") as f:
         lines = f.readlines()
@@ -36,6 +41,14 @@ def parse_labelout_file(filepath: str) -> Dict[str, pd.DataFrame]:
 
     # Extract injection data
     result["injection_cumulative"] = _extract_injection_table(lines)
+
+    # Extract constant injection rates from TOTAL PATTERN SURFACE RATES
+    result["injection_rates"] = _extract_total_pattern_rates(lines)
+
+    # Extract SOINIT and SWC values
+    soinit, swc = _extract_soinit_swc(lines)
+    result["soinit"] = soinit
+    result["swc"] = swc
 
     # Extract production data
     production_data = _extract_production_tables(lines)
@@ -125,6 +138,74 @@ def _extract_injection_table(lines: list) -> pd.DataFrame:
                     continue
 
     return pd.DataFrame(data)
+
+
+def _extract_total_pattern_rates(lines: list) -> Dict[str, float]:
+    """Extract constant injection rates from TOTAL PATTERN SURFACE RATES section."""
+    rates = {"WATER_STB_D": 0.0, "SOLVENT_MMSCF_D": 0.0}
+
+    for i, line in enumerate(lines):
+        # Find the TOTAL PATTERN section
+        if "TOTAL PATTERN" in line:
+            # Look for the header line with WATER and SOLVENT (within next 5 lines)
+            for j in range(i + 1, min(i + 6, len(lines))):
+                if "WATER" in lines[j] and "SOLVENT" in lines[j]:
+                    # Check if this is the header line with STB/D and MMSCF/D units
+                    next_line_idx = j + 1
+                    if (
+                        next_line_idx < len(lines)
+                        and "STB/D" in lines[next_line_idx]
+                        and "MMSCF/D" in lines[next_line_idx]
+                    ):
+                        # Data line is next (after units line)
+                        data_line_idx = next_line_idx + 1
+                        if data_line_idx < len(lines):
+                            values = lines[data_line_idx].split()
+                            # The format is: YEARS YEARS RB/D HCPV/D HCPV/YR STB/D MMSCF/D
+                            # We need the last two values
+                            if len(values) >= 2:
+                                try:
+                                    water_rate = float(values[-2])
+                                    solvent_rate = float(values[-1])
+                                    rates["WATER_STB_D"] = water_rate
+                                    rates["SOLVENT_MMSCF_D"] = solvent_rate
+                                    return rates
+                                except (ValueError, IndexError):
+                                    pass
+            break
+
+    return rates
+
+
+def _extract_soinit_swc(lines: list) -> tuple:
+    """Extract SOINIT and SWC values from the labelout file."""
+    soinit = 0.0
+    swc = 0.0
+
+    for i, line in enumerate(lines):
+        # Find the line with SOINIT header
+        if "SOINIT" in line and "SWINIT" in line and "SGINIT" in line:
+            # Next line has the values
+            if i + 1 < len(lines):
+                values = lines[i + 1].split()
+                if len(values) >= 1:
+                    try:
+                        soinit = float(values[0])
+                    except (ValueError, IndexError):
+                        pass
+
+        # Find the line with SWC header
+        if "SWC" in line and "SWIR" in line:
+            # Next line has the values
+            if i + 1 < len(lines):
+                values = lines[i + 1].split()
+                if len(values) >= 1:
+                    try:
+                        swc = float(values[0])
+                    except (ValueError, IndexError):
+                        pass
+
+    return soinit, swc
 
 
 def _extract_production_tables(lines: list) -> Dict[str, pd.DataFrame]:
@@ -375,6 +456,7 @@ def create_summary_dataframe(tables: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     1. injection_cumulative: TIME_YRS, TOTAL_HCPV
     2. production_cumulative_rates: TIME_YRS, OIL_RECOVERY_PCT_OOIP (inner join)
     3. production_incremental_rates: All columns (left join to preserve all time points)
+    4. Adds constant injection rates extracted from total pattern surface rates
 
     Args:
         tables: Dictionary of DataFrames returned by parse_labelout_file()
@@ -443,6 +525,39 @@ def create_summary_dataframe(tables: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     # Add "Time, month" column with sequential values 1, 2, 3, ...
     summary_df.insert(1, "Time, month", range(1, len(summary_df) + 1))
 
+    # Extract constant injection rates from total pattern surface rates
+    injection_rates = tables.get("injection_rates", {})
+    water_rate_bbl_day = injection_rates.get("WATER_STB_D", 0.0)
+    solvent_rate_mmscf_day = injection_rates.get("SOLVENT_MMSCF_D", 0.0)
+
+    # Add constant injection rate columns before "Inj. CO2, hcpv"
+    inj_co2_col_idx = summary_df.columns.get_loc("Inj. CO2, hcpv")
+    summary_df.insert(inj_co2_col_idx, "Inj Water Rate, bbl/day", water_rate_bbl_day)
+    summary_df.insert(
+        inj_co2_col_idx + 1, "Inj Gas Rate, mmscf/day", solvent_rate_mmscf_day
+    )
+
+    # Calculate RF, %OOIP from RF, %COIP using SOINIT and SWC
+    # Formula: RF,%OOIP = RF,%COIP × SOINIT / (1 - SWC)
+    soinit = tables.get("soinit", 0.0)
+    swc = tables.get("swc", 0.0)
+
+    if soinit > 0 and (1 - swc) > 0:
+        summary_df["RF, %OOIP"] = (summary_df["RF,%COIP"] * soinit / (1 - swc)).round(2)
+    else:
+        summary_df["RF, %OOIP"] = 0.0
+
+    # Reorder columns: move RF,%COIP to be right before RF, %OOIP
+    cols = list(summary_df.columns)
+    # Remove RF,%COIP from its current position
+    cols.remove("RF,%COIP")
+    # Find position of RF, %OOIP
+    rf_ooip_idx = cols.index("RF, %OOIP")
+    # Insert RF,%COIP right before RF, %OOIP
+    cols.insert(rf_ooip_idx, "RF,%COIP")
+    # Reorder the dataframe
+    summary_df = summary_df[cols]
+
     return summary_df
 
 
@@ -487,35 +602,96 @@ def save_all_tables_to_csv(
         )
 
 
+def batch_process_labelout_files(
+    input_dir: str, output_dir: str, summary_only: bool = True
+) -> None:
+    """
+    Batch process all labelout files in a directory and save results to CSV.
+
+    Args:
+        input_dir: Directory containing labelout files
+        output_dir: Directory to save CSV files
+        summary_only: If True, save only summary CSV files (default: True)
+                     If False, save all tables including detailed data
+    """
+    input_path = Path(input_dir)
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    # Find all labelout files (files without extension or starting with 'labelout')
+    labelout_files = []
+    for file in input_path.iterdir():
+        if file.is_file():
+            # Check if file has no extension or starts with 'labelout'
+            if file.suffix == "" or file.name.startswith("labelout"):
+                labelout_files.append(file)
+
+    if not labelout_files:
+        print(f"No labelout files found in {input_dir}")
+        return
+
+    print(f"Found {len(labelout_files)} labelout files in {input_dir}")
+    print(f"Output directory: {output_dir}")
+    print(f"Mode: {'Summary only' if summary_only else 'All tables'}\n")
+
+    successful = 0
+    failed = 0
+
+    for labelout_file in sorted(labelout_files):
+        try:
+            print(f"Processing {labelout_file.name}...", end=" ")
+
+            # Parse the file
+            tables = parse_labelout_file(str(labelout_file))
+
+            # Get base filename
+            base_name = labelout_file.stem if labelout_file.stem else labelout_file.name
+
+            if summary_only:
+                # Save only summary DataFrame
+                summary_df = create_summary_dataframe(tables)
+                summary_file = output_path / f"{base_name}.csv"
+                summary_df.to_csv(summary_file, index=False)
+                print(f"[OK] Saved {base_name}.csv ({len(summary_df)} rows)")
+            else:
+                # Save all tables
+                for table_name, df in tables.items():
+                    if not df.empty:
+                        output_file = output_path / f"{base_name}_{table_name}.csv"
+                        df.to_csv(output_file, index=False)
+
+                # Also save summary
+                summary_df = create_summary_dataframe(tables)
+                summary_file = output_path / f"{base_name}_summary.csv"
+                summary_df.to_csv(summary_file, index=False)
+                print(f"[OK] Saved all tables for {base_name}")
+
+            successful += 1
+
+        except Exception as e:
+            print(f"[FAILED] {labelout_file.name}: {e}")
+            failed += 1
+
+    print(f"\n{'='*60}")
+    print(f"Batch processing complete:")
+    print(f"  Successful: {successful}")
+    print(f"  Failed: {failed}")
+    print(f"  Total: {len(labelout_files)}")
+    print(f"{'='*60}")
+
+
 if __name__ == "__main__":
-    # Example usage
-    labelout_file = r"d:\temp\co2-prophet\results\archive\labelout_1"
+    # Batch process all labelout files from Prophet directory
+    print("=" * 60)
+    print("BATCH PROCESSING LABELOUT FILES")
+    print("=" * 60)
+    print(f"Input directory:  {PROPHET_LABELOUT_DIR}")
+    print(f"Output directory: {PROPHET_LABELOUT_CSV_DIR}\n")
 
-    print("Parsing labelout file...")
-    tables = parse_labelout_file(labelout_file)
-
-    print("\nExtracted tables:")
-    for name, df in tables.items():
-        print(f"\n{name}: {len(df)} rows, {len(df.columns)} columns")
-        if len(df) > 0:
-            print(f"Columns: {', '.join(df.columns)}")
-            print(f"First row:\n{df.head(1)}")
-
-    # Create summary DataFrame
-    print("\n" + "=" * 60)
-    print("Creating summary DataFrame...")
-    summary_df = create_summary_dataframe(tables)
-    print(
-        f"\nlabelout_1_summary: {len(summary_df)} rows, {len(summary_df.columns)} columns"
+    batch_process_labelout_files(
+        input_dir=str(PROPHET_LABELOUT_DIR),
+        output_dir=str(PROPHET_LABELOUT_CSV_DIR),
+        summary_only=True,  # Only save summary CSV files (labelout_1.csv, labelout_2.csv, etc.)
     )
-    print(f"Columns: {', '.join(summary_df.columns)}")
-    print(f"\nFirst 5 rows:")
-    print(summary_df.head())
-    print(f"\nLast 5 rows:")
-    print(summary_df.tail())
 
-    # Save all tables to CSV (including summary)
-    print("\n" + "=" * 60)
-    print("Saving tables to CSV...")
-    save_all_tables_to_csv(labelout_file)
     print("\nDone!")

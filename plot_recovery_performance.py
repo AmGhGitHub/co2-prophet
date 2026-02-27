@@ -13,37 +13,27 @@ def plot_oil_vs_injected(
     csv_dir: str, params_csv: str = None, output_plot: str = None, verbose: bool = True
 ) -> None:
     """
-    Plot Oil produced vs Injected total for all cases using matplotlib.
-    Scales results by (SOINIT / 0.85) to normalize to %OOIP basis.
+    Plot RF, %OOIP vs Inj. CO2, hcpv for all cases using matplotlib.
 
     Args:
-        csv_dir: Directory containing CSV files
-        params_csv: Path to parameters CSV file (to read SOINIT for scaling)
+        csv_dir: Directory containing labelout CSV files (from labelout_parser.py)
+        params_csv: Path to parameters CSV file (not used, kept for compatibility)
         output_plot: Optional path to save the plot (if None, displays plot)
         verbose: If True, print status messages (default: True)
     """
-    # Read SOINIT values from parameters CSV if provided
-    soinit_dict = {}
-    if params_csv:
-        try:
-            params_df = pd.read_csv(params_csv)
-            soinit_dict = dict(zip(params_df["RUN"], params_df["SOINIT"]))
-            if verbose:
-                print(f"Loaded SOINIT values from {params_csv} for scaling")
-        except Exception as e:
-            if verbose:
-                print(f"Warning: Could not read SOINIT from {params_csv}: {e}")
-                print("Will use default scaling factor of 1.0")
-
-    # Get all CSV files and sort them (only OUTPUT_*.csv files)
+    # Get all labelout CSV files and sort them
     csv_files = sorted(
         [
             f
             for f in os.listdir(csv_dir)
-            if f.startswith("OUTPUT_") and f.endswith(".csv")
+            if (f.startswith("labelout_") or f.startswith("LABELOUT_"))
+            and f.endswith(".csv")
         ],
         key=lambda x: int(x.split("_")[1].split(".")[0]),  # Sort by run number
     )
+
+    if verbose:
+        print(f"Found {len(csv_files)} labelout CSV files in {csv_dir}")
 
     # Create figure
     plt.figure(figsize=(16, 10))
@@ -51,29 +41,42 @@ def plot_oil_vs_injected(
     # Plot each case
     for csv_file in csv_files:
         file_path = os.path.join(csv_dir, csv_file)
-        # Extract run number from filename (e.g., OUTPUT_1.csv -> 1)
-        run_number = int(csv_file.replace("OUTPUT_", "").replace(".csv", ""))
+        # Extract run number from filename (e.g., labelout_1.csv -> 1 or LABELOUT_1.csv -> 1)
+        run_number = int(csv_file.lower().replace("labelout_", "").replace(".csv", ""))
 
-        # Read the CSV file
-        df = pd.read_csv(file_path)
+        try:
+            # Read the CSV file
+            df = pd.read_csv(file_path)
 
-        # Get SOINIT for this run (default to 0.85 if not found)
-        soinit = soinit_dict.get(run_number, 0.85)
-        scaling_factor = soinit / 0.85
+            # Check if required columns exist
+            if "Inj. CO2, hcpv" not in df.columns or "RF, %OOIP" not in df.columns:
+                if verbose:
+                    print(f"Warning: Skipping {csv_file} - missing required columns")
+                continue
 
-        # Plot Oil produced vs Injected total with SOINIT scaling
-        plt.plot(
-            df["Injected total"],
-            df["Oil produced"] * 100 * scaling_factor,
-            linewidth=1.5,
-            alpha=0.8,
-        )
+            # Drop rows with NaN values in required columns
+            df_clean = df[["Inj. CO2, hcpv", "RF, %OOIP"]].dropna()
+
+            if df_clean.empty:
+                if verbose:
+                    print(f"Warning: Skipping {csv_file} - no valid data")
+                continue
+
+            # Plot RF, %OOIP vs Inj. CO2, hcpv
+            plt.plot(
+                df_clean["Inj. CO2, hcpv"],
+                df_clean["RF, %OOIP"],
+                linewidth=1.5,
+                alpha=0.8,
+            )
+
+        except Exception as e:
+            if verbose:
+                print(f"Error processing {csv_file}: {e}")
 
     plt.xlabel("Inj. CO2, HCPV", fontsize=18, fontweight="bold")
     plt.ylabel("Incremental Oil R.F, %OOIP", fontsize=18, fontweight="bold")
-    plt.title(
-        "Oil Produced vs Injected Total - All Cases", fontsize=20, fontweight="bold"
-    )
+    plt.title("RF, %OOIP vs Inj. CO2, HCPV - All Cases", fontsize=20, fontweight="bold")
 
     # Increase tick label font sizes
     plt.xticks(fontsize=14)
@@ -100,7 +103,7 @@ def plot_oil_vs_injected(
 
 if __name__ == "__main__":
     # Hard-coded paths
-    csv_dir = r"C:\vDos\Prophet\sen-output-csv"
+    csv_dir = r"C:\vDos\Prophet\sen-labelout-csv"
     results_dir = r"d:\temp\co2-prophet\results\img-results"
     params_csv = r"d:\temp\co2-prophet\sen-runs\sen_fbv.csv"
 
