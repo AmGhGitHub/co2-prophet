@@ -79,6 +79,7 @@ PARAMETER_GENERATOR_CONFIG = {
     "mmp_range": (1300, 1900),
     "soinit_range": (0.3, 0.6),
     "xkvh_range": (0.001, 0.15),
+    "solrat_range": (2.0, 10.0),
     # Fixed parameters (constant values, not varied)
     "sorw_default": 0.35,
     "sorg_default": 0.35,
@@ -94,6 +95,7 @@ PARAMETER_GENERATOR_CONFIG = {
         "MMP": "uniform",
         "SOINIT": "uniform",
         "XKVH": "uniform",
+        "SOLRAT": "uniform",
     },
 }
 

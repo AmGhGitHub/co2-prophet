@@ -110,6 +110,7 @@ def run_sensitivity_analysis(sensitivity_level: str = None, verbose: bool = True
             "mmp_range": config["mmp_range"],
             "soinit_range": config["soinit_range"],
             "xkvh_range": config["xkvh_range"],
+            "solrat_range": config["solrat_range"],
             # Fixed parameters
             "sorw_default": config.get("sorw_default", 0.35),
             "sorg_default": config.get("sorg_default", 0.35),
@@ -195,7 +196,7 @@ Examples:
   python sensitivity_runner.py --sensitivity high     # Use 'high' sensitivity (~250 runs)
   python sensitivity_runner.py -s config              # Use config file setting
 
-Sensitivity levels (for 5 parameters: DPCOEF, POROS, MMP, SOINIT, XKVH):
+Sensitivity levels (for 6 parameters: DPCOEF, POROS, MMP, SOINIT, XKVH, SOLRAT):
   minimum   - ~6 runs     - Very sparse, quick testing only
   low       - ~10 runs    - Basic coverage, preliminary analysis
   medium    - ~50 runs    - Recommended for most cases

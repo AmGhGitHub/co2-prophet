@@ -174,6 +174,7 @@ def format_param_for_jsx(param: str) -> str:
         "MMP": "MMP",
         "SORW": "So<sub>rw</sub>",
         "XKVH": "K<sub>v</sub>/K<sub>h</sub>",
+        "SOLRAT": "CO<sub>2</sub> Rate",
     }
     return param_map.get(param, param)
 
@@ -212,6 +213,7 @@ def generate_typescript_tornado_data(tornado_data: Dict) -> str:
                 "MMP": "MMP",
                 "SORW": "Sₒᵣᵥᵥ",  # S with orw subscript
                 "XKVH": "Kᵥ/Kₕ",  # K with v and h subscripts
+                "SOLRAT": "CO₂ Rate",
             }
             label = param_label_map.get(param, param)
             color = "#2ab300" if corr_value > 0 else "#042ec7"
@@ -393,6 +395,7 @@ def generate_typescript_coefficients(data: Dict) -> str:
             "MMP": "MMP (kPa)",
             "SORW": "So,rw",
             "XKVH": "Kv/Kh",
+            "SOLRAT": "CO2 Rate (HCPV)",
         }.get(param, param)
         lines.append(
             f'  {param}: {{ min: {values["min"]}, max: {values["max"]}, label: "{label}" }},'
