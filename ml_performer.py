@@ -336,6 +336,7 @@ def _plot_tornado_charts(correlations, output_dir):
         "MMP": "MMP",
         "SOINIT": r"$S_{oi}$",
         "XKVH": r"$K_v/K_h$",
+        "SOLRAT": r"$CO_2$ Rate",
         "SORW": r"$S_{orw}$",
         "SORG": r"$S_{org}$",
         "SORM": r"$S_{orm}$",

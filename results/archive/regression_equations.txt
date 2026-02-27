@@ -1,0 +1,333 @@
+================================================================================
+POLYNOMIAL REGRESSION EQUATIONS (DEGREE=2 WITH INTERACTIONS)
+================================================================================
+
+Note: These equations use MinMaxScaler (features scaled to [0, 1] range).
+Scaling parameters - Min and Max for each feature:
+
+  DPCOEF     : min =     0.3000, max =     0.9300
+  POROS      : min =     0.0800, max =     0.1300
+  MMP        : min =  1301.0000, max =  1899.0000
+  SOINIT     : min =     0.4010, max =     0.6000
+  XKVH       : min =     0.0100, max =     0.1000
+  SORW       : min =     0.2010, max =     0.5000
+  SORG       : min =     0.1500, max =     0.3500
+  SORM       : min =     0.0300, max =     0.1000
+  SGR        : min =     0.0000, max =     0.1000
+  SWC        : min =     0.0540, max =     0.1780
+  KWRO       : min =     0.1000, max =     0.4990
+  KRSMAX     : min =     0.1000, max =     0.6000
+  W          : min =     0.2000, max =     0.8000
+
+================================================================================
+
+Correlations with oil_recovery_at_1hcpv:
+  DPCOEF     : -0.6775  (Strong)
+  POROS      : -0.0207  (Very Weak)
+  MMP        : -0.0370  (Very Weak)
+  SOINIT     :  0.6396  (Strong)
+  XKVH       : -0.1205  (Weak)
+  SORW       : -0.0130  (Very Weak)
+  SORG       :  0.0087  (Very Weak)
+  SORM       : -0.0235  (Very Weak)
+  SGR        :  0.0848  (Very Weak)
+  SWC        : -0.0081  (Very Weak)
+  KWRO       :  0.0254  (Very Weak)
+  KRSMAX     : -0.0357  (Very Weak)
+  W          :  0.0488  (Very Weak)
+
+Correlations with oil_recovery_at_2hcpv:
+  DPCOEF     : -0.8464  (Very Strong)
+  POROS      : -0.0098  (Very Weak)
+  MMP        : -0.0516  (Very Weak)
+  SOINIT     :  0.4533  (Moderate)
+  XKVH       : -0.1221  (Weak)
+  SORW       : -0.0302  (Very Weak)
+  SORG       :  0.0206  (Very Weak)
+  SORM       : -0.0326  (Very Weak)
+  SGR        :  0.0826  (Very Weak)
+  SWC        : -0.0027  (Very Weak)
+  KWRO       :  0.0407  (Very Weak)
+  KRSMAX     : -0.0272  (Very Weak)
+  W          :  0.0400  (Very Weak)
+
+================================================================================
+
+Target: oil_recovery_at_1hcpv
+--------------------------------------------------------------------------------
+
+R² Score (test): 0.9911
+
+Polynomial Equation (degree=2 with interactions):
+  oil_recovery_at_1hcpv = 12.064377
+
+  All terms (sorted by importance):
+     -12.44343090 * DPCOEF
+    + 8.43942794 * DPCOEF^2
+     -7.36752087 * DPCOEF SOINIT
+    + 6.81225176 * SOINIT
+    + 4.28626234 * SOINIT^2
+     -1.42510066 * MMP^2
+    + 0.80133031 * MMP SOINIT
+    + 0.75581161 * POROS
+    + 0.66811794 * SORW
+    + 0.50924377 * MMP
+     -0.42419961 * POROS^2
+     -0.42180726 * POROS SOINIT
+     -0.40581136 * DPCOEF XKVH
+     -0.37894704 * XKVH SORW
+     -0.36752743 * POROS SORM
+    + 0.35875207 * DPCOEF SORG
+    + 0.35460640 * MMP SGR
+     -0.33479947 * POROS SORW
+    + 0.33332999 * POROS SWC
+    + 0.32642227 * MMP SORW
+    + 0.32035489 * DPCOEF KRSMAX
+     -0.31142095 * SOINIT SORG
+    + 0.27953523 * SWC
+     -0.27612751 * SGR KRSMAX
+     -0.27473943 * SORW SWC
+     -0.22978484 * KWRO^2
+     -0.22960098 * MMP SWC
+    + 0.22338335 * SGR
+    + 0.21650242 * XKVH KWRO
+     -0.20881293 * MMP XKVH
+     -0.20724920 * W
+     -0.20292449 * XKVH SGR
+    + 0.19321619 * XKVH^2
+     -0.19017846 * MMP KWRO
+    + 0.18704973 * SOINIT XKVH
+    + 0.18252576 * XKVH
+    + 0.17540507 * MMP W
+     -0.17454562 * MMP SORG
+     -0.16386188 * SORW^2
+     -0.16022235 * DPCOEF SGR
+     -0.15739570 * DPCOEF W
+    + 0.15374731 * MMP KRSMAX
+    + 0.15078651 * XKVH SWC
+     -0.14193855 * POROS SGR
+    + 0.13945944 * POROS SORG
+    + 0.13364263 * KWRO
+     -0.12640232 * XKVH SORG
+    + 0.12402003 * SORG W
+     -0.12125961 * SWC^2
+    + 0.11841227 * SORM KWRO
+     -0.11836850 * KRSMAX W
+     -0.11832217 * SORG SWC
+     -0.11548079 * SORG
+     -0.11394922 * KWRO KRSMAX
+    + 0.11095875 * SGR SWC
+     -0.11072203 * DPCOEF KWRO
+     -0.10990841 * DPCOEF SWC
+     -0.10710605 * DPCOEF SORW
+    + 0.10682715 * SORG^2
+    + 0.10574976 * POROS XKVH
+    + 0.10536814 * SWC KWRO
+    + 0.10325682 * KWRO W
+    + 0.10239940 * DPCOEF MMP
+    + 0.10176750 * W^2
+     -0.10170906 * MMP SORM
+     -0.09791850 * SOINIT SORM
+    + 0.09301044 * XKVH SORM
+    + 0.09234891 * KRSMAX^2
+    + 0.09067373 * SORM W
+    + 0.08746190 * SORM SGR
+    + 0.08437135 * SORW W
+    + 0.08424477 * POROS W
+     -0.08249334 * SORW KRSMAX
+    + 0.08074679 * SORM KRSMAX
+    + 0.07361102 * SORG SORM
+     -0.07241472 * SORG KRSMAX
+     -0.07186260 * XKVH W
+     -0.07157871 * SOINIT SGR
+     -0.06145273 * SOINIT SORW
+    + 0.05889988 * SOINIT W
+     -0.05660340 * SWC W
+     -0.05416682 * SWC KRSMAX
+     -0.04983818 * SGR^2
+     -0.04975667 * XKVH KRSMAX
+    + 0.04382987 * SGR KWRO
+     -0.04333218 * SORM SWC
+    + 0.04133068 * KRSMAX
+     -0.03989831 * SORW SORG
+    + 0.03780739 * SORW SORM
+     -0.03699898 * SOINIT SWC
+     -0.03659005 * SORW SGR
+     -0.03075683 * POROS KWRO
+     -0.02962995 * DPCOEF SORM
+    + 0.02830619 * SORG SGR
+     -0.02727855 * DPCOEF POROS
+     -0.02636232 * SOINIT KWRO
+     -0.02025389 * SORM
+     -0.01808091 * SGR W
+     -0.01636138 * POROS KRSMAX
+    + 0.01624850 * POROS MMP
+     -0.01447647 * SORG KWRO
+    + 0.01435999 * SOINIT KRSMAX
+    + 0.00257514 * SORM^2
+     -0.00231998 * SORW KWRO
+
+
+  Total terms: 104
+  Including:
+  - Linear terms (13): DPCOEF, POROS, MMP, SOINIT, XKVH, SORW, SORG, SORM, SGR, SWC, KWRO, KRSMAX, W
+  - Squared terms (13): DPCOEF², POROS², MMP², SOINIT², XKVH², SORW², SORG², SORM², SGR², SWC², KWRO², KRSMAX², W²
+  - Interaction terms (78): All pairwise products (13 choose 2)
+
+
+To use this equation:
+1. Scale input parameters using MinMaxScaler:
+   parameter_scaled = (parameter - min) / (max - min)
+   Result is in range [0, 1]
+2. Create polynomial features (squared terms and interactions)
+3. Apply the equation above with all terms
+4. Result is the predicted oil recovery in %OOIP
+
+================================================================================
+
+Target: oil_recovery_at_2hcpv
+--------------------------------------------------------------------------------
+
+R² Score (test): 0.9939
+
+Polynomial Equation (degree=2 with interactions):
+  oil_recovery_at_2hcpv = 21.568441
+
+  All terms (sorted by importance):
+     -19.53818865 * DPCOEF
+    + 9.67299044 * SOINIT
+     -8.86364306 * DPCOEF SOINIT
+    + 8.38576712 * DPCOEF^2
+    + 3.64442028 * SOINIT^2
+     -3.22606049 * MMP^2
+    + 0.99334693 * MMP SOINIT
+    + 0.98933446 * SORW
+    + 0.96495694 * MMP
+    + 0.94826871 * DPCOEF MMP
+     -0.76273773 * W
+    + 0.68494010 * POROS SWC
+     -0.63595705 * POROS SORW
+     -0.62358536 * MMP SWC
+     -0.61444682 * KRSMAX
+     -0.51560448 * SGR
+     -0.50418828 * SORW SWC
+    + 0.46835394 * POROS MMP
+    + 0.45976078 * MMP W
+     -0.45760963 * POROS
+    + 0.43115284 * KWRO W
+    + 0.42337087 * MMP KRSMAX
+    + 0.40004817 * POROS XKVH
+    + 0.38313211 * MMP SGR
+     -0.38034397 * MMP XKVH
+    + 0.37124887 * SGR^2
+    + 0.36864491 * MMP SORW
+     -0.36717702 * DPCOEF SGR
+     -0.35349822 * POROS SOINIT
+    + 0.34752741 * SGR SWC
+    + 0.34040277 * XKVH SWC
+    + 0.33452525 * SWC^2
+     -0.32203394 * DPCOEF XKVH
+    + 0.32122639 * POROS KRSMAX
+     -0.30882859 * DPCOEF SWC
+     -0.30686715 * SWC
+     -0.30411523 * XKVH SORW
+     -0.29105473 * DPCOEF POROS
+    + 0.28944855 * SORM W
+     -0.28932592 * XKVH
+    + 0.27844064 * KRSMAX^2
+    + 0.27405527 * POROS SORG
+    + 0.26764324 * DPCOEF KRSMAX
+     -0.26568018 * DPCOEF W
+     -0.25651548 * DPCOEF SORW
+    + 0.25502134 * SORW W
+     -0.25410869 * MMP SORM
+    + 0.25398414 * XKVH^2
+     -0.23814286 * SORW SORG
+     -0.22482710 * SORG
+     -0.22164618 * SOINIT SORG
+    + 0.21550463 * SORG W
+     -0.21096115 * SOINIT SWC
+    + 0.20645628 * POROS SORM
+    + 0.19558574 * DPCOEF SORG
+    + 0.17466279 * W^2
+     -0.16886187 * SORW^2
+     -0.16614665 * KWRO^2
+     -0.15721155 * KWRO KRSMAX
+     -0.13115468 * SORW KRSMAX
+     -0.12935454 * SORM^2
+     -0.12519684 * KRSMAX W
+     -0.12054561 * POROS^2
+     -0.11951436 * DPCOEF SORM
+    + 0.11571952 * SORM SGR
+    + 0.11496254 * XKVH KRSMAX
+     -0.11487127 * SOINIT SGR
+    + 0.11294223 * SORG SORM
+    + 0.11177690 * SWC KWRO
+     -0.10723663 * SORM SWC
+    + 0.09859460 * SORM KWRO
+     -0.09804593 * SORM
+     -0.09645985 * DPCOEF KWRO
+    + 0.09419314 * SOINIT XKVH
+    + 0.09021710 * XKVH SORG
+     -0.08785028 * SOINIT W
+    + 0.08727195 * SGR W
+    + 0.08075072 * SOINIT SORW
+     -0.08017425 * SORG KWRO
+     -0.06622400 * KWRO
+    + 0.05834724 * SWC KRSMAX
+     -0.05763948 * XKVH W
+     -0.05335162 * SORG^2
+    + 0.04976199 * SORG SGR
+    + 0.04348492 * SWC W
+    + 0.04315741 * POROS KWRO
+     -0.04292188 * SGR KRSMAX
+     -0.04209713 * SORG KRSMAX
+     -0.04039352 * POROS SGR
+    + 0.03946630 * XKVH KWRO
+     -0.03870091 * SORW SGR
+    + 0.03527427 * SORW KWRO
+    + 0.02962391 * POROS W
+     -0.02838883 * SGR KWRO
+     -0.02793582 * MMP SORG
+    + 0.02646909 * SOINIT KWRO
+    + 0.02371372 * XKVH SORM
+     -0.02354685 * MMP KWRO
+    + 0.02286389 * SOINIT SORM
+    + 0.02200544 * SORG SWC
+     -0.01913143 * SORW SORM
+    + 0.01072385 * XKVH SGR
+     -0.00452129 * SOINIT KRSMAX
+    + 0.00416668 * SORM KRSMAX
+
+
+  Total terms: 104
+  Including:
+  - Linear terms (13): DPCOEF, POROS, MMP, SOINIT, XKVH, SORW, SORG, SORM, SGR, SWC, KWRO, KRSMAX, W
+  - Squared terms (13): DPCOEF², POROS², MMP², SOINIT², XKVH², SORW², SORG², SORM², SGR², SWC², KWRO², KRSMAX², W²
+  - Interaction terms (78): All pairwise products (13 choose 2)
+
+
+To use this equation:
+1. Scale input parameters using MinMaxScaler:
+   parameter_scaled = (parameter - min) / (max - min)
+   Result is in range [0, 1]
+2. Create polynomial features (squared terms and interactions)
+3. Apply the equation above with all terms
+4. Result is the predicted oil recovery in %OOIP
+
+================================================================================
+
+
+Example calculation:
+--------------------------------------------------------------------------------
+If you have: DPCOEF=0.85, POROS=0.10, MMP=1350, SOINIT=0.50, XKVH=0.05, etc.
+
+1. Scale each parameter to [0, 1] using: (value - min) / (max - min)
+2. Create polynomial features:
+   - Squared: DPCOEF_scaled², POROS_scaled², etc.
+   - Interactions: DPCOEF_scaled * POROS_scaled, DPCOEF_scaled * MMP_scaled, etc.
+3. Plug all terms into the equation
+4. The result is the predicted oil recovery
+
+Note: MinMaxScaler is easier to work with since all scaled values are in [0, 1] range.
+

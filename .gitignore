@@ -8,7 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
-*.csv
-sen-runs/*.csv
-results/
+
+*.png
 
