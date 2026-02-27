@@ -172,7 +172,7 @@ def format_param_for_jsx(param: str) -> str:
         "DPCOEF": "V<sub>DP</sub>",
         "POROS": "φ",
         "MMP": "MMP",
-        "SOINIT": "So<sub>i</sub>",
+        "SORW": "So<sub>rw</sub>",
         "XKVH": "K<sub>v</sub>/K<sub>h</sub>",
     }
     return param_map.get(param, param)
@@ -210,7 +210,7 @@ def generate_typescript_tornado_data(tornado_data: Dict) -> str:
                 "DPCOEF": "Vᴅᴘ",  # V with DP in small caps (closest to subscript)
                 "POROS": "φ",
                 "MMP": "MMP",
-                "SOINIT": "Sₒᵢ",  # S with oi subscript
+                "SORW": "Sₒᵣᵥᵥ",  # S with orw subscript
                 "XKVH": "Kᵥ/Kₕ",  # K with v and h subscripts
             }
             label = param_label_map.get(param, param)
@@ -391,7 +391,7 @@ def generate_typescript_coefficients(data: Dict) -> str:
             "DPCOEF": "DP Coeff",
             "POROS": "Porosity",
             "MMP": "MMP (kPa)",
-            "SOINIT": "So,init",
+            "SORW": "So,rw",
             "XKVH": "Kv/Kh",
         }.get(param, param)
         lines.append(

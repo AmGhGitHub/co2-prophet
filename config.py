@@ -18,6 +18,7 @@ PROPHET_DATAFILE_DIR = Path("C:/vDos/Prophet/sen-datafiles")
 PROPHET_OUTPUT_DIR = Path("C:/vDos/Prophet/sen-output")
 PROPHET_CSV_OUTPUT_DIR = Path("C:/vDos/Prophet/sen-output-csv")
 PROPHET_CSV_VARS_DIR = Path("C:/vDos/Prophet/sen-runs")  # Copy of input CSV file
+PROPHET_LABELOUT_DIR = Path("C:/vDos/Prophet/sen-labelout")  # Labelout files per run
 
 # Visualization outputs
 RESULTS_DIR = BASE_DIR / "results"
@@ -70,8 +71,8 @@ PARAMETER_GENERATOR_CONFIG = {
     "seed": 42,  # Random seed (set to None for different data each run)
     "use_lhs": True,  # Use Latin Hypercube Sampling for better parameter space coverage
     # Sensitivity parameters (varied in analysis)
-    "dpcoef_range": (0.3, 0.99),
-    "poros_range": (0.08, 0.13),
+    "dpcoef_range": (0.65, 0.99),
+    "poros_range": (0.04, 0.14),
     "mmp_range": (1300, 1900),
     "soinit_range": (0.3, 0.6),
     "xkvh_range": (0.001, 0.15),

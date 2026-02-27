@@ -28,8 +28,8 @@ class ParameterGenerator:
     def generate_parameters(
         self,
         n_runs: int,
-        dpcoef_range=(0.7, 0.95),
-        poros_range=(0.08, 0.13),
+        dpcoef_range=(0.65, 0.99),
+        poros_range=(0.04, 0.14),
         mmp_range=(1200, 2200),
         soinit_range=(0.4, 0.6),
         xkvh_range=(0.01, 0.1),
@@ -56,8 +56,8 @@ class ParameterGenerator:
 
         Args:
             n_runs: Number of simulation runs to generate
-            dpcoef_range: (min, max) for depletion coefficient
-            poros_range: (min, max) for porosity (fraction)
+            dpcoef_range: (min, max) for depletion coefficient (0.65 to 0.99)
+            poros_range: (min, max) for porosity (fraction, 0.04 to 0.14)
             mmp_range: (min, max) for minimum miscibility pressure (psi)
             soinit_range: (min, max) for initial oil saturation (fraction)
             xkvh_range: (min, max) for vertical to horizontal permeability ratio
@@ -439,8 +439,8 @@ def generate_sensitivity_csv(
 
     # Default ranges (only for sensitivity parameters)
     ranges = {
-        "dpcoef_range": (0.7, 1.0),
-        "poros_range": (0.15, 0.35),
+        "dpcoef_range": (0.65, 0.99),
+        "poros_range": (0.04, 0.14),
         "mmp_range": (1200, 2200),
         "soinit_range": (0.4, 0.6),
         "xkvh_range": (0.01, 0.1),

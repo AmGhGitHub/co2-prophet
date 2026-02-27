@@ -17,7 +17,7 @@
 0,   0
 '*************  PROGRAM CONTROLS  ********'
 'LWGEN     OUTTIM'
-'N',      1
+'N',      0.0833
 '**** RELATIVE PERMEABILITY PARAMETERS ***'
 'SORW     SORG     SORM'
 0.47,      0.47,      0.001
@@ -40,13 +40,13 @@
 'TRES     P     MMP'
 136.4,      1784,      1377
 'DPCOEF   PERMAV   THICK   POROS   NLAYERS'
-0.7,      10,      53,      0.2,      5
+0.7,      100,      53,      0.2,      7
 'SOINIT     SGINIT     SWINIT'
 0.5,      0,      0.5
 'AREA     XKVH'
-640,      0.05
+1742400,      0.05
 '********** INJECTION PARAMETERS *********'
 'NTIMES     WAGTAG'
 1,      'T'
 'HCPVI    WTRRAT    SOLRAT     TMORVL'
-2,      0,      10,      0
+2,      0,      2.5,      0
