@@ -77,9 +77,8 @@ PARAMETER_GENERATOR_CONFIG = {
     "dpcoef_range": (0.65, 0.99),
     "poros_range": (0.04, 0.14),
     "mmp_range": (1300, 1900),
-    "soinit_range": (0.3, 0.6),
+    "soinit_range": (0.33, 0.47),
     "xkvh_range": (0.001, 0.15),
-    "solrat_range": (2.0, 10.0),
     # Fixed parameters (constant values, not varied)
     "sorw_default": 0.35,
     "sorg_default": 0.35,
@@ -95,7 +94,6 @@ PARAMETER_GENERATOR_CONFIG = {
         "MMP": "uniform",
         "SOINIT": "uniform",
         "XKVH": "uniform",
-        "SOLRAT": "uniform",
     },
 }
 

@@ -31,9 +31,8 @@ class ParameterGenerator:
         dpcoef_range=(0.65, 0.99),
         poros_range=(0.04, 0.14),
         mmp_range=(1200, 2200),
-        soinit_range=(0.4, 0.6),
+        soinit_range=(0.33, 0.47),
         xkvh_range=(0.01, 0.1),
-        solrat_range=(2.0, 10.0),
         # Fixed parameters (not varied in sensitivity analysis)
         sorw_default=0.35,
         sorg_default=0.35,
@@ -50,7 +49,7 @@ class ParameterGenerator:
         Generate random parameters for sensitivity analysis using Latin Hypercube Sampling.
 
         **Sensitivity Parameters (varied):**
-        - DPCOEF, POROS, MMP, SOINIT, XKVH, SOLRAT
+        - DPCOEF, POROS, MMP, SOINIT, XKVH
 
         **Fixed Parameters (constant values):**
         - SORW, SORG, SORM, SGR, SWC, KWRO, KRSMAX, W
@@ -62,7 +61,6 @@ class ParameterGenerator:
             mmp_range: (min, max) for minimum miscibility pressure (psi)
             soinit_range: (min, max) for initial oil saturation (fraction)
             xkvh_range: (min, max) for vertical to horizontal permeability ratio
-            solrat_range: (min, max) for solvent injection rate (HCPV, 2.0 to 10.0)
             sorw_default: Fixed value for residual oil saturation to water
             sorg_default: Fixed value for residual oil saturation to gas
             sorm_default: Fixed value for residual oil saturation to miscible
@@ -86,7 +84,6 @@ class ParameterGenerator:
                 "MMP": "uniform",
                 "SOINIT": "uniform",
                 "XKVH": "uniform",
-                "SOLRAT": "uniform",
             }
 
         # Parameter names and ranges (only sensitivity parameters)
@@ -96,7 +93,6 @@ class ParameterGenerator:
             "MMP",
             "SOINIT",
             "XKVH",
-            "SOLRAT",
         ]
         param_ranges = [
             dpcoef_range,
@@ -104,7 +100,6 @@ class ParameterGenerator:
             mmp_range,
             soinit_range,
             xkvh_range,
-            solrat_range,
         ]
 
         params_list = []
@@ -186,11 +181,6 @@ class ParameterGenerator:
                 # Generate XKVH
                 params["XKVH"] = self._generate_value(
                     "XKVH", xkvh_range, distributions.get("XKVH", "uniform")
-                )
-
-                # Generate SOLRAT
-                params["SOLRAT"] = self._generate_value(
-                    "SOLRAT", solrat_range, distributions.get("SOLRAT", "uniform")
                 )
 
                 # Add fixed parameters (not varied in sensitivity)
@@ -335,7 +325,6 @@ class ParameterGenerator:
             "SOINIT",
             "SWINIT",
             "XKVH",
-            "SOLRAT",
             "SORW",
             "SORG",
             "SORM",
@@ -396,7 +385,7 @@ class ParameterGenerator:
             return f"{value:.3f}"
         elif param_name == "XKVH":
             return f"{value:.2f}"
-        elif param_name in ["MMP", "SOLRAT"]:
+        elif param_name == "MMP":
             return f"{value:.1f}"
         else:
             return f"{value:.1f}"
@@ -464,9 +453,8 @@ def generate_sensitivity_csv(
         "dpcoef_range": (0.65, 0.99),
         "poros_range": (0.04, 0.14),
         "mmp_range": (1200, 2200),
-        "soinit_range": (0.4, 0.6),
+        "soinit_range": (0.33, 0.47),
         "xkvh_range": (0.01, 0.1),
-        "solrat_range": (2.0, 10.0),
         # Fixed parameters (defaults, not ranges)
         "sorw_default": 0.35,
         "sorg_default": 0.35,
@@ -484,9 +472,7 @@ def generate_sensitivity_csv(
 
     # Auto-calculate number of runs if not specified
     if n_runs is None:
-        n_params = (
-            6  # 6 sensitivity parameters: DPCOEF, POROS, MMP, SOINIT, XKVH, SOLRAT
-        )
+        n_params = 5  # 5 sensitivity parameters: DPCOEF, POROS, MMP, SOINIT, XKVH
         n_runs = calculate_recommended_runs(n_params, sensitivity_level)
         print(
             f"Auto-calculated {n_runs} runs for {n_params} parameters (sensitivity level: {sensitivity_level})"

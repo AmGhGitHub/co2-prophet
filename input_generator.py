@@ -54,7 +54,7 @@ def generate_input_file(base_file: str, output_file: str, params: dict) -> None:
         base_file: Path to the base input file
         output_file: Path to the output file
         params: Dictionary with keys: DPCOEF, PERMAV, POROS, MMP, SOINIT, SWINIT, XKVH,
-                SOLRAT, SORW, SORG, SORM, SGR, SSR, SWC, SWIR, KWRO, KRSMAX, W
+                SORW, SORG, SORM, SGR, SSR, SWC, SWIR, KWRO, KRSMAX, W
     """
     with open(base_file, "r") as f:
         lines = f.readlines()
@@ -178,24 +178,13 @@ def generate_input_file(base_file: str, output_file: str, params: dict) -> None:
             lines[i + 1] = ",".join(parts)
             break
 
-    # Update SOLRAT (line with 'HCPVI    WTRRAT    SOLRAT     TMORVL')
-    for i, line in enumerate(lines):
-        if "HCPVI" in line and "SOLRAT" in line:
-            value_line = lines[i + 1]
-            parts = value_line.split(",")
-            # parts[0] = HCPVI, parts[1] = WTRRAT, parts[2] = SOLRAT, parts[3] = TMORVL
-            # Keep HCPVI, WTRRAT, TMORVL as is, only update SOLRAT
-            parts[2] = replace_value_preserve_spacing(parts[2], params["SOLRAT"])
-            lines[i + 1] = ",".join(parts)
-            break
-
     with open(output_file, "w") as f:
         f.writelines(lines)
 
     print(
         f"Created '{output_file}' with: DPCOEF={params['DPCOEF']:.2f}, PERMAV={params['PERMAV']:.1f}, "
         f"POROS={params['POROS']:.3f}, MMP={params['MMP']:.0f}, SOINIT={params['SOINIT']:.3f}, "
-        f"SWINIT={params['SWINIT']:.3f}, XKVH={params['XKVH']:.2f}, SOLRAT={params['SOLRAT']:.1f}, SORM={params['SORM']:.3f}"
+        f"SWINIT={params['SWINIT']:.3f}, XKVH={params['XKVH']:.2f}, SORM={params['SORM']:.3f}"
     )
 
 
@@ -231,7 +220,6 @@ def process_csv_and_generate_input_files(
                 "SOINIT": float(row["SOINIT"]),
                 "SWINIT": float(row["SWINIT"]),
                 "XKVH": float(row["XKVH"]),
-                "SOLRAT": float(row["SOLRAT"]),
                 # Relative permeability parameters (now included from CSV)
                 "SORW": float(row["SORW"]),
                 "SORG": float(row["SORG"]),

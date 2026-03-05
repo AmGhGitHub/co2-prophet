@@ -54,7 +54,6 @@ def analyze_correlations(csv_file: str, output_dir: str = None, verbose: bool = 
         "MMP",
         "SOINIT",
         "XKVH",
-        "SOLRAT",
     ]
     targets = ["oil_recovery_at_1hcpv", "oil_recovery_at_2hcpv"]
 
@@ -113,7 +112,6 @@ def build_ml_models(
         "MMP",
         "SOINIT",
         "XKVH",
-        "SOLRAT",
     ]
     X = df_complete[params].values
     y_1hcpv = df_complete["oil_recovery_at_1hcpv"].values
@@ -336,7 +334,6 @@ def _plot_tornado_charts(correlations, output_dir):
         "MMP": "MMP",
         "SOINIT": r"$S_{oi}$",
         "XKVH": r"$K_v/K_h$",
-        "SOLRAT": r"$CO_2$ Rate",
         "SORW": r"$S_{orw}$",
         "SORG": r"$S_{org}$",
         "SORM": r"$S_{orm}$",
@@ -589,14 +586,12 @@ def _save_regression_equations(results, params, scaler, output_dir, correlations
 
                 f.write(f"\n\n  Total terms: {len(poly_feature_names)}\n")
                 f.write("  Including:\n")
+                f.write("  - Linear terms (5): DPCOEF, POROS, MMP, SOINIT, XKVH\n")
                 f.write(
-                    "  - Linear terms (6): DPCOEF, POROS, MMP, SOINIT, XKVH, SOLRAT\n"
+                    "  - Squared terms (5): DPCOEF², POROS², MMP², SOINIT², XKVH²\n"
                 )
                 f.write(
-                    "  - Squared terms (6): DPCOEF², POROS², MMP², SOINIT², XKVH², SOLRAT²\n"
-                )
-                f.write(
-                    "  - Interaction terms (15): All pairwise products (6 choose 2)\n"
+                    "  - Interaction terms (10): All pairwise products (5 choose 2)\n"
                 )
                 f.write(
                     "\n  Note: Only sensitivity parameters are included in the model.\n"

@@ -6,75 +6,65 @@ Note: These equations use MinMaxScaler (features scaled to [0, 1] range).
 Scaling parameters - Min and Max for each feature:
 
   DPCOEF     : min =     0.6500, max =     0.9300
-  POROS      : min =     0.0400, max =     0.1400
+  POROS      : min =     0.0430, max =     0.1360
   MMP        : min =  1300.0000, max =  1899.0000
-  SOINIT     : min =     0.3010, max =     0.6000
+  SOINIT     : min =     0.3300, max =     0.4700
   XKVH       : min =     0.0000, max =     0.1500
-  SOLRAT     : min =     2.0070, max =     9.9900
 
 ================================================================================
 
 Correlations with oil_recovery_at_1hcpv:
-  DPCOEF     : -0.2664  (Weak)
-  POROS      : -0.0725  (Very Weak)
-  MMP        :  0.0163  (Very Weak)
-  SOINIT     :  0.9382  (Very Strong)
-  XKVH       : -0.0393  (Very Weak)
-  SOLRAT     : -0.0093  (Very Weak)
+  DPCOEF     : -0.3480  (Moderate)
+  POROS      : -0.0954  (Very Weak)
+  MMP        : -0.2239  (Weak)
+  SOINIT     :  0.8809  (Very Strong)
+  XKVH       :  0.0190  (Very Weak)
 
 Correlations with oil_recovery_at_2hcpv:
-  DPCOEF     : -0.3779  (Moderate)
-  POROS      : -0.0815  (Very Weak)
-  MMP        :  0.0284  (Very Weak)
-  SOINIT     :  0.9022  (Very Strong)
-  XKVH       : -0.0361  (Very Weak)
-  SOLRAT     :  0.0037  (Very Weak)
+  DPCOEF     : -0.5921  (Strong)
+  POROS      : -0.1040  (Weak)
+  MMP        : -0.1664  (Weak)
+  SOINIT     :  0.7324  (Very Strong)
+  XKVH       : -0.0164  (Very Weak)
 
 ================================================================================
 
 Target: oil_recovery_at_1hcpv
 --------------------------------------------------------------------------------
 
-R² Score (test): 0.9962
+R² Score (test): 0.9920
 
 Polynomial Equation (degree=2 with interactions):
-  oil_recovery_at_1hcpv = 1.753514
+  oil_recovery_at_1hcpv = 2.247069
 
   All terms (sorted by importance):
-    + 5.38638188 * SOINIT^2
-     -3.82266022 * DPCOEF SOINIT
-    + 3.49915577 * SOINIT
-     -0.79952538 * DPCOEF
-    + 0.69819748 * DPCOEF^2
-     -0.64894958 * MMP^2
-    + 0.37733118 * MMP
-    + 0.29005574 * POROS SOLRAT
-     -0.22473834 * XKVH
-     -0.20572394 * POROS SOINIT
-    + 0.17427001 * DPCOEF MMP
-     -0.16092616 * SOLRAT^2
-    + 0.10314613 * MMP SOINIT
-    + 0.09414808 * XKVH^2
-    + 0.07899440 * XKVH SOLRAT
-    + 0.06409583 * DPCOEF SOLRAT
-    + 0.06207014 * POROS XKVH
-     -0.05799161 * POROS
-     -0.05653169 * MMP SOLRAT
-    + 0.05643339 * DPCOEF XKVH
-    + 0.04643249 * SOINIT XKVH
-     -0.04052187 * POROS MMP
-    + 0.03968249 * DPCOEF POROS
-    + 0.01804380 * SOINIT SOLRAT
-    + 0.01595598 * POROS^2
-     -0.01115600 * MMP XKVH
-     -0.00073967 * SOLRAT
+    + 1.79164443 * SOINIT
+     -1.39169385 * DPCOEF
+    + 0.98188752 * SOINIT^2
+     -0.96946173 * DPCOEF SOINIT
+     -0.79159590 * MMP^2
+    + 0.73881934 * DPCOEF^2
+    + 0.48572568 * MMP
+    + 0.20681805 * DPCOEF MMP
+     -0.07752360 * POROS^2
+     -0.07088082 * MMP XKVH
+    + 0.06925741 * POROS MMP
+    + 0.04399459 * XKVH
+    + 0.03293356 * DPCOEF POROS
+    + 0.03197173 * POROS SOINIT
+     -0.03001865 * XKVH^2
+    + 0.02742441 * POROS XKVH
+     -0.02548017 * POROS
+     -0.02019914 * MMP SOINIT
+     -0.01409524 * DPCOEF XKVH
+     -0.01039861 * SOINIT XKVH
 
 
-  Total terms: 27
+  Total terms: 20
   Including:
-  - Linear terms (6): DPCOEF, POROS, MMP, SOINIT, XKVH, SOLRAT
-  - Squared terms (6): DPCOEF², POROS², MMP², SOINIT², XKVH², SOLRAT²
-  - Interaction terms (15): All pairwise products (6 choose 2)
+  - Linear terms (5): DPCOEF, POROS, MMP, SOINIT, XKVH
+  - Squared terms (5): DPCOEF², POROS², MMP², SOINIT², XKVH²
+  - Interaction terms (10): All pairwise products (5 choose 2)
 
   Note: Only sensitivity parameters are included in the model.
   Fixed parameters (not varied): SORW, SORG, SORM, SGR, SWC, KWRO, KRSMAX, W
@@ -93,46 +83,39 @@ To use this equation:
 Target: oil_recovery_at_2hcpv
 --------------------------------------------------------------------------------
 
-R² Score (test): 0.9975
+R² Score (test): 0.9957
 
 Polynomial Equation (degree=2 with interactions):
-  oil_recovery_at_2hcpv = 2.427954
+  oil_recovery_at_2hcpv = 3.211125
 
   All terms (sorted by importance):
-    + 6.41596501 * SOINIT^2
-     -5.92354394 * DPCOEF SOINIT
-    + 5.28436315 * SOINIT
-     -0.59030109 * MMP^2
-     -0.53121406 * DPCOEF
-    + 0.42728494 * DPCOEF MMP
-    + 0.30431099 * POROS SOLRAT
-     -0.21583863 * DPCOEF^2
-    + 0.18349803 * MMP
-     -0.18263421 * POROS SOINIT
-     -0.18167838 * XKVH
-    + 0.17338107 * MMP SOINIT
-     -0.16337185 * SOLRAT^2
-     -0.09519144 * DPCOEF POROS
-     -0.09399881 * MMP SOLRAT
-    + 0.09178317 * XKVH^2
-    + 0.09060468 * SOLRAT
-    + 0.07503522 * SOINIT XKVH
-     -0.04337342 * POROS MMP
-    + 0.04303772 * DPCOEF XKVH
-    + 0.03779364 * POROS^2
-    + 0.03509592 * POROS XKVH
-    + 0.02960739 * DPCOEF SOLRAT
-     -0.02647305 * SOINIT SOLRAT
-     -0.00591936 * MMP XKVH
-    + 0.00562113 * XKVH SOLRAT
-     -0.00186112 * POROS
+    + 2.78636547 * SOINIT
+     -1.89327506 * DPCOEF SOINIT
+     -1.55664007 * DPCOEF
+    + 1.12505897 * SOINIT^2
+     -0.78153527 * MMP^2
+    + 0.49235405 * MMP
+    + 0.33018770 * DPCOEF MMP
+    + 0.13656683 * POROS XKVH
+     -0.12430130 * POROS
+     -0.09599603 * XKVH
+     -0.07838653 * MMP XKVH
+    + 0.07718339 * POROS^2
+     -0.07569483 * MMP SOINIT
+    + 0.04185408 * XKVH^2
+     -0.04076415 * DPCOEF POROS
+     -0.02376877 * POROS SOINIT
+    + 0.02177678 * DPCOEF^2
+     -0.01505856 * POROS MMP
+     -0.01429342 * SOINIT XKVH
+     -0.00511905 * DPCOEF XKVH
 
 
-  Total terms: 27
+  Total terms: 20
   Including:
-  - Linear terms (6): DPCOEF, POROS, MMP, SOINIT, XKVH, SOLRAT
-  - Squared terms (6): DPCOEF², POROS², MMP², SOINIT², XKVH², SOLRAT²
-  - Interaction terms (15): All pairwise products (6 choose 2)
+  - Linear terms (5): DPCOEF, POROS, MMP, SOINIT, XKVH
+  - Squared terms (5): DPCOEF², POROS², MMP², SOINIT², XKVH²
+  - Interaction terms (10): All pairwise products (5 choose 2)
 
   Note: Only sensitivity parameters are included in the model.
   Fixed parameters (not varied): SORW, SORG, SORM, SGR, SWC, KWRO, KRSMAX, W
