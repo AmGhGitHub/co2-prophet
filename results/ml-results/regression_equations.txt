@@ -6,7 +6,7 @@ Note: These equations use MinMaxScaler (features scaled to [0, 1] range).
 Scaling parameters - Min and Max for each feature:
 
   DPCOEF     : min =     0.6500, max =     0.9300
-  POROS      : min =     0.0430, max =     0.1360
+  POROS      : min =     0.0480, max =     0.1400
   MMP        : min =  1300.0000, max =  1899.0000
   SOINIT     : min =     0.3300, max =     0.4700
   XKVH       : min =     0.0000, max =     0.1500
@@ -14,50 +14,50 @@ Scaling parameters - Min and Max for each feature:
 ================================================================================
 
 Correlations with oil_recovery_at_1hcpv:
-  DPCOEF     : -0.3480  (Moderate)
-  POROS      : -0.0954  (Very Weak)
-  MMP        : -0.2239  (Weak)
-  SOINIT     :  0.8809  (Very Strong)
-  XKVH       :  0.0190  (Very Weak)
+  DPCOEF     : -0.4243  (Moderate)
+  POROS      :  0.0453  (Very Weak)
+  MMP        : -0.0593  (Very Weak)
+  SOINIT     :  0.8869  (Very Strong)
+  XKVH       :  0.0671  (Very Weak)
 
 Correlations with oil_recovery_at_2hcpv:
-  DPCOEF     : -0.5921  (Strong)
-  POROS      : -0.1040  (Weak)
-  MMP        : -0.1664  (Weak)
-  SOINIT     :  0.7324  (Very Strong)
-  XKVH       : -0.0164  (Very Weak)
+  DPCOEF     : -0.6275  (Strong)
+  POROS      :  0.0448  (Very Weak)
+  MMP        : -0.0204  (Very Weak)
+  SOINIT     :  0.7637  (Very Strong)
+  XKVH       :  0.0790  (Very Weak)
 
 ================================================================================
 
 Target: oil_recovery_at_1hcpv
 --------------------------------------------------------------------------------
 
-R² Score (test): 0.9920
+R² Score (test): 0.9943
 
 Polynomial Equation (degree=2 with interactions):
-  oil_recovery_at_1hcpv = 2.247069
+  oil_recovery_at_1hcpv = 2.227109
 
   All terms (sorted by importance):
-    + 1.79164443 * SOINIT
-     -1.39169385 * DPCOEF
-    + 0.98188752 * SOINIT^2
-     -0.96946173 * DPCOEF SOINIT
-     -0.79159590 * MMP^2
-    + 0.73881934 * DPCOEF^2
-    + 0.48572568 * MMP
-    + 0.20681805 * DPCOEF MMP
-     -0.07752360 * POROS^2
-     -0.07088082 * MMP XKVH
-    + 0.06925741 * POROS MMP
-    + 0.04399459 * XKVH
-    + 0.03293356 * DPCOEF POROS
-    + 0.03197173 * POROS SOINIT
-     -0.03001865 * XKVH^2
-    + 0.02742441 * POROS XKVH
-     -0.02548017 * POROS
-     -0.02019914 * MMP SOINIT
-     -0.01409524 * DPCOEF XKVH
-     -0.01039861 * SOINIT XKVH
+    + 1.70683347 * SOINIT
+     -1.30560024 * DPCOEF
+     -0.98499809 * DPCOEF SOINIT
+    + 0.96100492 * SOINIT^2
+     -0.71504239 * MMP^2
+    + 0.70241447 * DPCOEF^2
+    + 0.44727336 * MMP
+     -0.12666605 * POROS^2
+     -0.11391059 * MMP XKVH
+    + 0.09143537 * XKVH
+    + 0.08714152 * POROS
+    + 0.08517702 * MMP SOINIT
+    + 0.08250696 * POROS SOINIT
+    + 0.06880111 * DPCOEF MMP
+     -0.06297408 * XKVH^2
+    + 0.05101797 * SOINIT XKVH
+    + 0.03695980 * POROS MMP
+     -0.02704453 * POROS XKVH
+     -0.01564797 * DPCOEF POROS
+     -0.00190802 * DPCOEF XKVH
 
 
   Total terms: 20
@@ -83,32 +83,32 @@ To use this equation:
 Target: oil_recovery_at_2hcpv
 --------------------------------------------------------------------------------
 
-R² Score (test): 0.9957
+R² Score (test): 0.9966
 
 Polynomial Equation (degree=2 with interactions):
-  oil_recovery_at_2hcpv = 3.211125
+  oil_recovery_at_2hcpv = 3.203851
 
   All terms (sorted by importance):
-    + 2.78636547 * SOINIT
-     -1.89327506 * DPCOEF SOINIT
-     -1.55664007 * DPCOEF
-    + 1.12505897 * SOINIT^2
-     -0.78153527 * MMP^2
-    + 0.49235405 * MMP
-    + 0.33018770 * DPCOEF MMP
-    + 0.13656683 * POROS XKVH
-     -0.12430130 * POROS
-     -0.09599603 * XKVH
-     -0.07838653 * MMP XKVH
-    + 0.07718339 * POROS^2
-     -0.07569483 * MMP SOINIT
-    + 0.04185408 * XKVH^2
-     -0.04076415 * DPCOEF POROS
-     -0.02376877 * POROS SOINIT
-    + 0.02177678 * DPCOEF^2
-     -0.01505856 * POROS MMP
-     -0.01429342 * SOINIT XKVH
-     -0.00511905 * DPCOEF XKVH
+    + 2.61084105 * SOINIT
+     -1.84656551 * DPCOEF SOINIT
+     -1.64231368 * DPCOEF
+    + 1.14757051 * SOINIT^2
+     -0.69690425 * MMP^2
+    + 0.37728200 * MMP
+    + 0.24691582 * DPCOEF MMP
+     -0.16675525 * POROS^2
+     -0.10780510 * MMP XKVH
+    + 0.10675056 * MMP SOINIT
+    + 0.09851778 * POROS
+    + 0.08413971 * DPCOEF^2
+    + 0.07469097 * POROS SOINIT
+    + 0.03967457 * XKVH
+     -0.02603961 * XKVH^2
+    + 0.02490440 * POROS XKVH
+    + 0.02146574 * SOINIT XKVH
+     -0.00693382 * DPCOEF POROS
+    + 0.00510959 * POROS MMP
+    + 0.00046815 * DPCOEF XKVH
 
 
   Total terms: 20
