@@ -28,11 +28,11 @@ class ParameterGenerator:
     def generate_parameters(
         self,
         n_runs: int,
-        dpcoef_range=(0.65, 0.99),
+        dpcoef_range=(0.8, 0.99),
         poros_range=(0.04, 0.14),
         mmp_range=(1200, 2200),
         soinit_range=(0.33, 0.47),
-        xkvh_range=(0.01, 0.1),
+        xkvh_range=(0.01, 0.2),
         # Fixed parameters (not varied in sensitivity analysis)
         sorw_default=0.35,
         sorg_default=0.35,
@@ -450,11 +450,11 @@ def generate_sensitivity_csv(
 
     # Default ranges (only for sensitivity parameters)
     ranges = {
-        "dpcoef_range": (0.65, 0.99),
+        "dpcoef_range": (0.8, 0.99),
         "poros_range": (0.04, 0.14),
         "mmp_range": (1200, 2200),
         "soinit_range": (0.33, 0.47),
-        "xkvh_range": (0.01, 0.1),
+        "xkvh_range": (0.01, 0.2),
         # Fixed parameters (defaults, not ranges)
         "sorw_default": 0.35,
         "sorg_default": 0.35,

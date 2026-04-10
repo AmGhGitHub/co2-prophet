@@ -35,21 +35,21 @@ def generate_monte_carlo_samples(n_samples=20000, seed=None):
     Generate Monte Carlo samples using specified distributions.
 
     Based on FBV Defaults:
-    - DP Coeff: Triangular(0.7, 0.95, mode=0.8)
+    - DP Coeff: Uniform(0.8, 0.99)
     - Porosity: Triangular(0.09, 0.11, mode=0.1)
-    - MMP: Triangular(1300, 1900, mode=1600) kPa
+    - MMP: Triangular(1300, 1900, mode=1600) psia
     - Sorw: Triangular(0.33, 0.46, mode=0.4)
-    - Kv/Kh: Normal(mean=0.1, std=0.01, truncated to [0.01, 0.1])
+    - Kv/Kh: Triangular(0.01, 0.2, mode=0.1)
     - CO2 Rate: Uniform(2, 10)
     """
     if seed is not None:
         np.random.seed(seed)
 
-    dpcoef = triangular_sample(n_samples, 0.7, 0.95, 0.8)
+    dpcoef = uniform_sample(n_samples, 0.8, 0.99)
     poros = triangular_sample(n_samples, 0.09, 0.11, 0.1)
     mmp = triangular_sample(n_samples, 1300, 1900, 1600)  # Already in kPa
     sorw = triangular_sample(n_samples, 0.33, 0.46, 0.4)
-    xkvh = normal_sample(n_samples, 0.1, 0.01, 0.01, 0.1)
+    xkvh = triangular_sample(n_samples, 0.01, 0.2, 0.1)
     solrat = uniform_sample(n_samples, 2.0, 10.0)
 
     df = pd.DataFrame(
